@@ -18,12 +18,15 @@ class Analysis(object):
 
     @classmethod
     def basic_stats(self, df):
+        print("Dataset shape: ", df.shape)
         print("Features: ", df.shape[1])
         print("Observations: ", df.shape[0])
 
-
     def logistic_regression(self, features, targets):
         pass
+
+    def important_features(self,clf, features):
+        return sorted(zip(map(lambda x: round(x, 4), clf.feature_importances_), features.columns.values), reverse=True)
 
     def interpret_tree(self, rf, instances=None):
         if instances is None:

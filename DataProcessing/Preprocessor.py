@@ -45,3 +45,8 @@ class Processor(object):
         train_target = train[specific_target]
         test_target = test[specific_target]
         return train_features, train_target, test_features, test_target
+
+    def impute_missing_values(self):
+        # TODO fix this garbage
+        col_list = ["SAT_VERBAL","SAT_MATH","HIP_GEL","HIP_EMPLOYMENT","HIP_CAMP","HIP_EARLYSTART","HIP_EOP"]
+        self.df.fillna(value=0, inplace=True)
