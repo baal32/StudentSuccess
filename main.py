@@ -41,7 +41,7 @@ def main():
     iterations = 10
     train_features, train_target, test_features, test_target = preprocessor.split_test_train_features_targets(.75, specific_target="APROG_PROG_STATUS")
     for i in range(10):
-        feature_mask = Model.get_random_mask(train_features.shape[1], probability=.15)
+        feature_mask = Model.get_random_mask(train_features.shape[1], probability=.1)
         train_features_subset = train_features[train_features.columns[feature_mask]]
         test_features_subset = test_features[test_features.columns[feature_mask]]
         #print(train_features_subset)
