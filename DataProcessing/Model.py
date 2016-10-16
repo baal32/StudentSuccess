@@ -13,18 +13,21 @@ class Model(object):
         self.logger.info("Initializing Model")
 
 
-    def get_random_mask(self,mask_shape, probability=.2):
+    def get_random_mask(self,mask_shape,  column_headers, probability=.2,):
         #self.logger.info("Getting random mask, p=%f",probability)
-        mask = pd.DataFrame(np.random.choice([False,True],mask_shape,p=[1-probability, probability]))
+        mask = pd.DataFrame(np.random.choice([False,True],mask_shape,p=[1-probability, probability]), columns=column_headers)
         return mask
 
     def add_results(self, score, features_list):
-        self.logger.info("Adding feature with score %f to score dataframe", score)
+        #self.logger.info("Adding feature with score %f to score dataframe", score)
         result = features_list
         result["score"] = score
         #print("Feature list",features_list)
         #print("Result",result)
         self.fitness_scores_and_features = self.fitness_scores_and_features.append(pd.DataFrame(result).T)
+
+    def reset_fitness_scores_and_features(self):
+        self.fitness_scores_and_features = pd.DataFrame()
 
 
     def sort_results(self,col="score"):
@@ -52,30 +55,37 @@ class Model(object):
         for i in range(num_of_children):
             # get first parent
             parent1 = self.fitness_scores_and_features.iloc[np.random.randint(0, self.fitness_scores_and_features.shape[0], size=1)]
-            self.logger.info("Chose parent 1 with score %f", parent1['score'])
+            #self.logger.info("Chose parent 1 with score %f", parent1['score'])
             # get second parent
             parent2 = self.fitness_scores_and_features.iloc[np.random.randint(0, self.fitness_scores_and_features.shape[0], size=1)]
             while parent1.equals(parent2):
                 parent2 = self.fitness_scores_and_features.iloc[np.random.randint(0, self.fitness_scores_and_features.shape[0], size=1)]
 
-            self.logger.info("Chose parent 2 with score %f", parent2['score'])
+            #self.logger.info("Chose parent 2 with score %f", parent2['score'])
 
             # perform crossover
             self.logger.info("Evolving child from parents with scores %f %f",  parent1['score'], parent2['score'])
             new_child = self.crossover(parent1, parent2)
-            self.mutate(new_child, .15)
+            new_child = self.mutate(new_child, .05)
+            #drop score column so remaining should just be 1s and 0s
+            new_child.drop(['score'], axis=1, inplace=True)
+
+            #convert to boolean
+            new_child = (new_child == 1)
+
             # add the resultant child to the dataframe
-            self.logger.info("Adding child %d",i)
-            children_df.append(new_child)
+            #self.logger.info("Adding child %d",i)
+            children_df = children_df.append(new_child, i)
         return children_df
 
     def evolve_child(self, parent1, parent2):
         pass
 
-    def mutate(self, children, mutation_probability=0.15):
-        mutation_mask = np.random.choice([True,False],children.shape[1],p=[mutation_probability, 1-mutation_probability])
+    def mutate(self, child, mutation_probability=0.02):
+        mutation_mask = np.random.choice([True,False], child.shape[1], p=[mutation_probability, 1 - mutation_probability])
         #self.logger.info("Mutation mask with mutating probability %f, mask = %s", mutation_probability, mutation_mask)
-        mutated_child = np.logical_xor(mutation_mask, children)
+        mutated_child = np.logical_xor(mutation_mask, child)
+        self.logger.info("Premutation child features: %d, mutation mask features: %d, mutated child features: %d", (child[:] > 0).sum(1), np.sum(mutation_mask), (mutated_child[:] > 0).sum(1))
         #self.logger.info("Mutated child %s", mutated_child)
         return mutated_child
 
@@ -83,7 +93,14 @@ class Model(object):
         # one point crossover
         crossover_point = np.random.randint(0,parent1.shape[1])
         #print("Parent1:",parent1.iloc[0],"Parent2:",parent2.iloc[0])
-        return pd.concat([parent1.ix[:,0:crossover_point],parent2.ix[:,crossover_point:]], axis=1)
+        # need to reindex both parents otherwise when concatting you end up with two rows, one of which has the values for parent1 and other cols NaN and the other which has the values for parent2 and teh rest NaN
+        # index      col1      col2    (crossover point)  col3      col4
+        #   3         1         0                          NA         NA
+        #   5         NA        NA                         0          1
+        parent1.index = [0]
+        parent2.index = [0]
+        crossover = pd.concat([parent1.ix[:,0:crossover_point],parent2.ix[:,crossover_point:]], axis=1)
+        return crossover
 
     def purge_low_scores(self, population_purge_pct):
         self.logger.info("Purging %f population before purge count: %d", population_purge_pct, self.fitness_scores_and_features.shape[0])

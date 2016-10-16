@@ -9,6 +9,7 @@ import logging
 from DataProcessing.Model import Model
 import cProfile
 import csv
+import config
 
 
 
@@ -44,44 +45,47 @@ def main():
 
     train_features, train_target, test_features, test_target = preprocessor.split_test_train_features_targets(.75,  specific_target="APROG_PROG_STATUS")
 
-    experiments = 2
+    experiments = 10
     population_size = 10
     retain_best = 3
     low_score_purge_pct = .5
-    initial_population_chance_bit_on = .15
+    initial_population_chance_bit_on = .05
     #initial population randomly generated
 
 
     # experiments
     for experiment_number in range(experiments):
 
-
+        config.logger.info("Experiment #%d", experiment_number+1)
         # create the population that will be analyzed
         if experiment_number == 0:
-            population = model.get_random_mask((population_size, train_features.shape[1]), probability=initial_population_chance_bit_on)
+            population = model.get_random_mask((population_size, train_features.shape[1]), probability=initial_population_chance_bit_on, column_headers = train_features.columns.values )
             #population = train_features[train_features.columns[feature_mask]]
 
 
 
         # evaluate population
         # for i in range(population_size):
+
+        # for each experiment reset the score dataframe to be population by the newest population
+        model.reset_fitness_scores_and_features()
         for i,p  in population.iterrows():
             analysis = Analysis(test_features, test_target)
 
             #print("Train features ",train_features)
             #print("Train feature subsetted ",population)
-            train_features_subset = train_features[]
-            test_features_subset = test_features[test_features.columns[feature_mask]]
+            train_features_subset = train_features[train_features.columns[p]]
+            test_features_subset = test_features[test_features.columns[p]]
             #print(population)
             #print(test_features_subset.shape[1], " Features chosen ", population.columns.values)
 
             clf = RandomForestClassifier(n_jobs=10, n_estimators=100) #, max_depth=10)
-            clf = clf.fit(population, train_target)
+            clf = clf.fit(train_features_subset, train_target)
             score = clf.score(test_features_subset, test_target)
             print("# Features chosen: ", test_features_subset.shape[1], " score: ", score, "top 3 features: ", analysis.important_features(clf, population)[0:3])
             # save score and features to experiment set
             #print("Feature mask",feature_mask)
-            model.add_results(score, feature_mask)
+            model.add_results(score, p)
             # get feature set
 
 
@@ -93,7 +97,7 @@ def main():
         model.evaluate_global_best()
         # evolve children from remaining population
         population = model.evolve_children(population_size)
-
+        logger.info("Global best by experiment %d: %f", experiment_number, model.global_best.iloc[0]['score'])
         # now that scores have been evaluated, purge poor scorers
 
         # determine best 2 results from experiment set
