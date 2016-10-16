@@ -1,11 +1,14 @@
 import pyodbc
-import pandas
+import pandas as pd
 from config import cfg
+import os
+import logging
 
 class DataSource(object):
 
 
     conn = None
+    df = None
 
     def __init__(self):
         pass
@@ -17,11 +20,25 @@ class DataSource(object):
         self.conn = pyodbc.connect(cfg['db']['connections']['oracle']) #pyodbc.connect('DSN=STUDENTSUCCESS;PWD=student_success')
 
     def query(self, query_string):
-        return pandas.read_sql(query_string, self.conn)
+        return pd.read_sql(query_string, self.conn)
 
-    def get_all_data(self):
-        self.connect_Oracle()
-        return(self.query(cfg['db']['queries']['complete'])) #"select * from student_success.complete_vw@SM_SMDW_LINK where "                                 # "rownum < 50 AND "                                   "APROG_PROG_STATUS IN ('DC','CM') AND ACAD_PROG='UBACH'"))
+    def get_all_data(self, read_from_cache=True, filename = None):
+        if filename is None:
+            filename = cfg['db']['cache']
+        if os.path.exists(filename):
+            self.read_from_cache(filename)
+        else:
+            self.connect_Oracle()
+            self.df = self.query(cfg['db']['queries']['complete'])
+            self.write_to_cache(filename)
+        return self.df
 
-    def cache(self):
-        pass
+    def write_to_cache(self, filename=None):
+        if filename is None:
+            filename = cfg['db']['cache']
+        self.df.to_pickle(filename)
+
+    def read_from_cache(self, filename = None):
+        if filename is None:
+            filename = cfg['db']['cache']
+        self.df = pd.read_pickle(filename)

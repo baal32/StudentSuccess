@@ -34,30 +34,64 @@ def main():
 
     #print(train_features.columns[0:7])
 
+    # Model instnace
+    model = Model()
 
     # genetic feature selection and scoring loop
 
     # set number of iterations
-    iterations = 10
-    train_features, train_target, test_features, test_target = preprocessor.split_test_train_features_targets(.75, specific_target="APROG_PROG_STATUS")
-    for i in range(10):
-        feature_mask = Model.get_random_mask(train_features.shape[1], probability=.1)
-        train_features_subset = train_features[train_features.columns[feature_mask]]
-        test_features_subset = test_features[test_features.columns[feature_mask]]
-        #print(train_features_subset)
-        print(test_features_subset.shape[1]," Features chosen ", train_features_subset.columns.values)
-        clf = RandomForestClassifier(n_jobs=100, n_estimators=1000) #, max_depth=10)
-        clf = clf.fit(train_features_subset, train_target)
-        analysis = Analysis(test_features, test_target)
-        print(analysis.important_features(clf, train_features_subset))
-        print(clf.score(test_features_subset, test_target))
-        # get feature set
 
-        # create randomforest
 
-        # fit forest
+    train_features, train_target, test_features, test_target = preprocessor.split_test_train_features_targets(.75,  specific_target="APROG_PROG_STATUS")
 
-        # score forest
+    experiments = 2
+    population_size = 4
+    retain_best = 3
+
+    # experiments
+    for i in range(experiments):
+
+        # evaluate population
+        for i in range(population_size):
+            feature_mask = Model.get_random_mask(train_features.shape[1], probability=.1)
+            train_features_subset = train_features[train_features.columns[feature_mask]]
+            #print("Train features ",train_features)
+            #print("Train feature subsetted ",train_features_subset)
+            test_features_subset = test_features[test_features.columns[feature_mask]]
+            #print(train_features_subset)
+            print(test_features_subset.shape[1]," Features chosen ", train_features_subset.columns.values)
+            clf = RandomForestClassifier(n_jobs=10, n_estimators=100) #, max_depth=10)
+            clf = clf.fit(train_features_subset, train_target)
+            score = clf.score(test_features_subset, test_target)
+
+            # save score and features to experiment set
+            #print("Feature mask",feature_mask)
+            model.add_results(score, feature_mask)
+
+            print(score)
+            analysis = Analysis(test_features, test_target)
+            print(analysis.important_features(clf, train_features_subset))
+            # get feature set
+
+
+        # determine best 2 results from experiment set
+        parents = model.get_best_features_sets(retain_best)
+        for i,p in parents.iterrows():
+            print("P",p)
+            print("Parent:",i,p)
+            print("Parent ",i," features:",train_features.columns[p].values)
+#            print(parents[p:p+1])
+#        print("Parent1",parents[:1], "Parent2",parents[1:2])
+
+        #use crossover and mutation to get children
+        child1, child2 = model.evolve_children(parents,2)
+
+        #compare to global best and determine new global best
+
+
+
+
+
 
 
 

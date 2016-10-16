@@ -7,6 +7,9 @@ configuration:
         queries:
             complete: select * from student_success.complete_vw@SM_SMDW_LINK where rownum < 100000 and APROG_PROG_STATUS IN ('DC','CM') AND ACAD_PROG='UBACH' and basis_admit_code='N'
 
+        cache: data_cache.pkl
+
+
     col_lists:
         one_hot_list:
             - GE_CRITICAL_THINKING_STATUS
@@ -42,3 +45,6 @@ configuration:
             - GRADUATE_4_YEARS
             - GRADUATE_5_YEARS
             - GRADUATE_6_YEARS
+
+    genetic:
+        mutation: 0.02
