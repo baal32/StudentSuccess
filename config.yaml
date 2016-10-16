@@ -9,6 +9,9 @@ configuration:
 
         cache: data_cache.pkl
 
+    logging:
+        output_log: output.log
+
 
     col_lists:
         one_hot_list:

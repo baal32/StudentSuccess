@@ -45,46 +45,72 @@ def main():
     train_features, train_target, test_features, test_target = preprocessor.split_test_train_features_targets(.75,  specific_target="APROG_PROG_STATUS")
 
     experiments = 2
-    population_size = 4
+    population_size = 10
     retain_best = 3
+    low_score_purge_pct = .5
+    initial_population_chance_bit_on = .15
+    #initial population randomly generated
+
 
     # experiments
-    for i in range(experiments):
+    for experiment_number in range(experiments):
+
+
+        # create the population that will be analyzed
+        if experiment_number == 0:
+            population = model.get_random_mask((population_size, train_features.shape[1]), probability=initial_population_chance_bit_on)
+            #population = train_features[train_features.columns[feature_mask]]
+
+
 
         # evaluate population
-        for i in range(population_size):
-            feature_mask = Model.get_random_mask(train_features.shape[1], probability=.1)
-            train_features_subset = train_features[train_features.columns[feature_mask]]
-            #print("Train features ",train_features)
-            #print("Train feature subsetted ",train_features_subset)
-            test_features_subset = test_features[test_features.columns[feature_mask]]
-            #print(train_features_subset)
-            print(test_features_subset.shape[1]," Features chosen ", train_features_subset.columns.values)
-            clf = RandomForestClassifier(n_jobs=10, n_estimators=100) #, max_depth=10)
-            clf = clf.fit(train_features_subset, train_target)
-            score = clf.score(test_features_subset, test_target)
+        # for i in range(population_size):
+        for i,p  in population.iterrows():
+            analysis = Analysis(test_features, test_target)
 
+            #print("Train features ",train_features)
+            #print("Train feature subsetted ",population)
+            train_features_subset = train_features[]
+            test_features_subset = test_features[test_features.columns[feature_mask]]
+            #print(population)
+            #print(test_features_subset.shape[1], " Features chosen ", population.columns.values)
+
+            clf = RandomForestClassifier(n_jobs=10, n_estimators=100) #, max_depth=10)
+            clf = clf.fit(population, train_target)
+            score = clf.score(test_features_subset, test_target)
+            print("# Features chosen: ", test_features_subset.shape[1], " score: ", score, "top 3 features: ", analysis.important_features(clf, population)[0:3])
             # save score and features to experiment set
             #print("Feature mask",feature_mask)
             model.add_results(score, feature_mask)
-
-            print(score)
-            analysis = Analysis(test_features, test_target)
-            print(analysis.important_features(clf, train_features_subset))
             # get feature set
 
 
+        # sort scores
+        model.sort_results()
+        # throw away lowest scorers (population_purge) by pct
+        model.purge_low_scores(population_purge_pct=low_score_purge_pct)
+        # take the rest of the scores, append the global best, and determine new global best
+        model.evaluate_global_best()
+        # evolve children from remaining population
+        population = model.evolve_children(population_size)
+
+        # now that scores have been evaluated, purge poor scorers
+
         # determine best 2 results from experiment set
-        parents = model.get_best_features_sets(retain_best)
-        for i,p in parents.iterrows():
-            print("P",p)
-            print("Parent:",i,p)
-            print("Parent ",i," features:",train_features.columns[p].values)
+        #parents = model.get_best_feature_sets(retain_best)
+        #for i,p in parents.iterrows():
+            #print("P",p)
+            #print("Parent:",i,p)
+            #print(type(p))
+        #    print("Parent ",i,"score:",p['score']," features:",train_features.columns[p.drop('score') == 1.0].values)
 #            print(parents[p:p+1])
 #        print("Parent1",parents[:1], "Parent2",parents[1:2])
 
+    best_results = model.get_best_feature_sets(retain_best)
+    for i,p in best_results.iterrows():
+        print("Final best ",i,"score ",p['score'],"***************************************************\n\n\n\n")
         #use crossover and mutation to get children
-        child1, child2 = model.evolve_children(parents,2)
+   #     child1, child2 = model.evolve_children(parents,2)
 
         #compare to global best and determine new global best
 
