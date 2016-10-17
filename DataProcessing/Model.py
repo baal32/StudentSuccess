@@ -2,23 +2,41 @@ import numpy as np
 import pandas as pd
 import config
 
+class ModelResult(object):
+    def __init__(self, trained_classifier, feature_set, score):
+        self.trained_classifier= trained_classifier
+        self.feature_set = feature_set
+        self.score = score
+
+    def __lt__(self, other):
+        return self.score < other.score
+
+# sorting class isntances
+# import operator
+#sorted_x = sorted(x, key=operator.attrgetter('score'))
+
 class Model(object):
 
 
     logger = config.logger
+
+    # list of modelresults
     fitness_scores_and_features = pd.DataFrame()
-    global_best = pd.DataFrame({"score": 0.0}, index=[0])
+    #global_best = pd.DataFrame({"score": 0.0}, index=[0])
+
+    # best scoring modelresult
+    global_best = None
 
     def __init__(self):
         self.logger.info("Initializing Model")
 
 
-    def get_random_mask(self,mask_shape,  column_headers, probability=.2,):
+    def get_random_mask(self,mask_shape, column_headers, probability=.2,):
         #self.logger.info("Getting random mask, p=%f",probability)
         mask = pd.DataFrame(np.random.choice([False,True],mask_shape,p=[1-probability, probability]), columns=column_headers)
         return mask
 
-    def add_results(self, score, features_list):
+    def add_results(self, score, features_list, classifier):
         #self.logger.info("Adding feature with score %f to score dataframe", score)
         result = features_list
         result["score"] = score
@@ -44,8 +62,15 @@ class Model(object):
 
     def evaluate_global_best(self):
         if (self.global_best is None) or ((self.global_best[:1]['score'] < self.fitness_scores_and_features[0:1]['score'])[0]):
-            self.logger.info("Updating global best - old score %f, new score %f",self.global_best[:1]['score'], self.fitness_scores_and_features[0:1]['score'])
-            self.global_best.iloc[0] = self.fitness_scores_and_features.iloc[0]
+            if self.global_best is None:
+                current_score = 0
+            else:
+                current_score = self.global_best.iloc[0]['score']
+            self.logger.info("Updating global best - old score %f, new score %f",current_score, self.fitness_scores_and_features[0:1]['score'])
+            self.global_best = self.fitness_scores_and_features.iloc[0]
+            pass
+        else:
+            self.logger.info("Global best reamins unchanged at %f", self.global_best[:1]['score'])
         #self.global_best = self.global_best.append(pd.DataFrame(result).T)
 
     def evolve_children(self, num_of_children):
@@ -66,7 +91,7 @@ class Model(object):
             # perform crossover
             self.logger.info("Evolving child from parents with scores %f %f",  parent1['score'], parent2['score'])
             new_child = self.crossover(parent1, parent2)
-            new_child = self.mutate(new_child, .05)
+            new_child = self.mutate(new_child, config.cfg['genetic']['mutation_rate'])
             #drop score column so remaining should just be 1s and 0s
             new_child.drop(['score'], axis=1, inplace=True)
 

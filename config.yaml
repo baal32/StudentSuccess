@@ -13,6 +13,9 @@ configuration:
         output_log: output.log
 
 
+    genetic:
+        mutation_rate: 0.02
+
     col_lists:
         one_hot_list:
             - GE_CRITICAL_THINKING_STATUS
@@ -49,5 +52,3 @@ configuration:
             - GRADUATE_5_YEARS
             - GRADUATE_6_YEARS
 
-    genetic:
-        mutation: 0.02

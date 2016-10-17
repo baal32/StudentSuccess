@@ -46,7 +46,7 @@ def main():
     train_features, train_target, test_features, test_target = preprocessor.split_test_train_features_targets(.75,  specific_target="APROG_PROG_STATUS")
 
     experiments = 10
-    population_size = 10
+    population_size = 6
     retain_best = 3
     low_score_purge_pct = .5
     initial_population_chance_bit_on = .05
@@ -82,10 +82,10 @@ def main():
             clf = RandomForestClassifier(n_jobs=10, n_estimators=100) #, max_depth=10)
             clf = clf.fit(train_features_subset, train_target)
             score = clf.score(test_features_subset, test_target)
-            print("# Features chosen: ", test_features_subset.shape[1], " score: ", score, "top 3 features: ", analysis.important_features(clf, population)[0:3])
+            print("# Features chosen: ", test_features_subset.shape[1], " score: ", score, "top 3 features: ", analysis.important_features(clf, population)[0:5])
             # save score and features to experiment set
             #print("Feature mask",feature_mask)
-            model.add_results(score, p)
+            model.add_results(score, p, clf)
             # get feature set
 
 
@@ -110,6 +110,7 @@ def main():
 #            print(parents[p:p+1])
 #        print("Parent1",parents[:1], "Parent2",parents[1:2])
 
+    logger.info("Global best score: %f Features: %s", model.global_best.iloc[0]['score'], model.global_best.columns[model.global_best.iloc[0].drop('score')])
     best_results = model.get_best_feature_sets(retain_best)
     for i,p in best_results.iterrows():
         print("Final best ",i,"score ",p['score'],"***************************************************\n\n\n\n")

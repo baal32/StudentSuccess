@@ -1,12 +1,12 @@
 from sklearn.ensemble import RandomForestClassifier
 from treeinterpreter import treeinterpreter as ti
-import logging
+import config
 
 class Analysis(object):
 
     features = None
     target = None
-    logger = logging.getLogger(__name__)
+    logger =config.logger
 
     def __init__(self,features, target):
         self.features = features
@@ -18,9 +18,8 @@ class Analysis(object):
 
     @classmethod
     def basic_stats(self, df):
-        print("Dataset shape: ", df.shape)
-        print("Features: ", df.shape[1])
-        print("Observations: ", df.shape[0])
+        self.logger.info("Dataset shape: %s, features: %d, observations: %d", df.shape, df.shape[1],df.shape[0])
+        self.logger.info("Completions: %d, Discontinuations: %d, Completion pct: %f", len(df[df["APROG_PROG_STATUS"] == 'CM']), len(df[df["APROG_PROG_STATUS"] == 'DC']), len(df[df["APROG_PROG_STATUS"] == 'CM'])/float(df.shape[0]))
 
     def logistic_regression(self, features, targets):
         pass
