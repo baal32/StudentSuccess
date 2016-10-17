@@ -45,8 +45,8 @@ def main():
 
     train_features, train_target, test_features, test_target = preprocessor.split_test_train_features_targets(.75,  specific_target="APROG_PROG_STATUS")
 
-    experiments = 10
-    population_size = 6
+    experiments = 20
+    population_size = 10
     retain_best = 3
     low_score_purge_pct = .5
     initial_population_chance_bit_on = .05
@@ -82,7 +82,7 @@ def main():
             clf = RandomForestClassifier(n_jobs=10, n_estimators=100) #, max_depth=10)
             clf = clf.fit(train_features_subset, train_target)
             score = clf.score(test_features_subset, test_target)
-            print("# Features chosen: ", test_features_subset.shape[1], " score: ", score, "top 3 features: ", analysis.important_features(clf, population)[0:5])
+            print("# Features chosen: ", test_features_subset.shape[1], " score: ", score, "top 3 features: ", analysis.important_features(clf, test_features_subset.columns.values)[0:5])
             # save score and features to experiment set
             #print("Feature mask",feature_mask)
             model.add_results(score, p, clf)
@@ -95,9 +95,10 @@ def main():
         model.purge_low_scores(population_purge_pct=low_score_purge_pct)
         # take the rest of the scores, append the global best, and determine new global best
         model.evaluate_global_best()
+        logger.info("Global best by experiment %d: %f", experiment_number, model.global_best[0].score)
         # evolve children from remaining population
         population = model.evolve_children(population_size)
-        logger.info("Global best by experiment %d: %f", experiment_number, model.global_best.iloc[0]['score'])
+
         # now that scores have been evaluated, purge poor scorers
 
         # determine best 2 results from experiment set
@@ -110,15 +111,17 @@ def main():
 #            print(parents[p:p+1])
 #        print("Parent1",parents[:1], "Parent2",parents[1:2])
 
-    logger.info("Global best score: %f Features: %s", model.global_best.iloc[0]['score'], model.global_best.columns[model.global_best.iloc[0].drop('score')])
+    # logger.info("Global best score: %f Features: %s", model.global_best.iloc[0]['score'], model.global_best.columns[model.global_best.iloc[0].drop('score')])
+    logger.info("Global best score: %f Features: %s", model.global_best[0].score, model.global_best[0].feature_set[0:3])
     best_results = model.get_best_feature_sets(retain_best)
-    for i,p in best_results.iterrows():
-        print("Final best ",i,"score ",p['score'],"***************************************************\n\n\n\n")
+    for i in best_results:
+        logger.info("Final score: %f Features: %s", i.score,analysis.important_features(i.trained_classifier,i.feature_set[i.feature_set==True].index))
+#        print("Final best ",i,"score ",p['score'],"***************************************************\n\n\n\n")
         #use crossover and mutation to get children
    #     child1, child2 = model.evolve_children(parents,2)
 
         #compare to global best and determine new global best
-
+    analysis.interpret_tree(best_results[0].trained_classifier)
 
 
 
@@ -127,13 +130,13 @@ def main():
 
 
     #Plotter.histogram(clf,train_features)
-    print(clf)
+ #   print(clf)
 
-    print(clf.score(test_features,test_target))
+  #  print(clf.score(test_features,test_target))
 
-    analysis = Analysis(test_features, test_target)
-    print(analysis.important_features(clf,train_features))
-    analysis.interpret_tree(clf)
+   # analysis = Analysis(test_features, test_target)
+   # print(analysis.important_features(clf,train_features))
+
   #  loc_submission = "test.csv"
   #  with open(loc_submission, "w") as outfile:
   #      writer = csv.writer(outfile)

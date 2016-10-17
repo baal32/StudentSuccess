@@ -24,8 +24,8 @@ class Analysis(object):
     def logistic_regression(self, features, targets):
         pass
 
-    def important_features(self,clf, features):
-        return sorted(zip(map(lambda x: round(x, 4), clf.feature_importances_), features.columns.values), reverse=True)
+    def important_features(self,clf, feature_names):
+        return sorted(zip(map(lambda x: round(x, 4), clf.feature_importances_), feature_names), reverse=True)
 
     def interpret_tree(self, rf, instances=None):
         if instances is None:

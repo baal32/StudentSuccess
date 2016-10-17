@@ -1,6 +1,7 @@
 import numpy as np
 import pandas as pd
 import config
+from copy import deepcopy
 
 class ModelResult(object):
     def __init__(self, trained_classifier, feature_set, score):
@@ -21,11 +22,11 @@ class Model(object):
     logger = config.logger
 
     # list of modelresults
-    fitness_scores_and_features = pd.DataFrame()
+    model_results = []
     #global_best = pd.DataFrame({"score": 0.0}, index=[0])
 
-    # best scoring modelresult
-    global_best = None
+    # list of best scoring modelresults to keep
+    global_best = []
 
     def __init__(self):
         self.logger.info("Initializing Model")
@@ -37,41 +38,45 @@ class Model(object):
         return mask
 
     def add_results(self, score, features_list, classifier):
-        #self.logger.info("Adding feature with score %f to score dataframe", score)
-        result = features_list
-        result["score"] = score
+        #self.logger.info("Adding feature set with score %f to score dataframe", score)
+        self.model_results.append(ModelResult(classifier, features_list,score))
+        #result = features_list
+        #result["score"] = score
         #print("Feature list",features_list)
         #print("Result",result)
-        self.fitness_scores_and_features = self.fitness_scores_and_features.append(pd.DataFrame(result).T)
+        #self.model_results = self.model_results.append(pd.DataFrame(result).T)
+
 
     def reset_fitness_scores_and_features(self):
-        self.fitness_scores_and_features = pd.DataFrame()
+        self.model_results = []
 
 
     def sort_results(self,col="score"):
-        if self.global_best is not None:
-            self.fitness_scores_and_features.append(self.global_best)
-        self.fitness_scores_and_features.sort_values(col, ascending=False, inplace=True)
+        self.logger.info("Sorting results")
+        if self.global_best:
+            self.model_results.append(self.global_best[0])
+        self.model_results.sort(reverse=True)
 
-    def get_best_feature_sets(self, num_of_best=2):
-        sorted_scores = self.fitness_scores_and_features.sort_values(['score'], ascending=False)
+    def get_best_feature_sets(self, num_of_best=1):
+        self.sort_results()
+        return self.model_results[:num_of_best]
+        #sorted_scores = self.model_results.sort_values(['score'], ascending=False)
         #print(sorted_scores)
         #self.logger.info("Getting best features - score %f - features %s",sorted_scores.iloc[0:num_of_best]['score'],'TODO: add feature list')
-        return sorted_scores[0:num_of_best]
+        #return sorted_scores[0:num_of_best]
         #return parents[:1],parents[1:2]
 
     def evaluate_global_best(self):
-        if (self.global_best is None) or ((self.global_best[:1]['score'] < self.fitness_scores_and_features[0:1]['score'])[0]):
-            if self.global_best is None:
-                current_score = 0
+        top_model_result = self.get_best_feature_sets(num_of_best = 1)
+        if self.global_best:
+            if self.global_best[0] < top_model_result[0]:
+                self.global_best[0] = deepcopy(top_model_result[0])
+                self.logger.info("Updating global best - old score %f, new score %f", self.global_best[0].score , self.model_results[0].score)
             else:
-                current_score = self.global_best.iloc[0]['score']
-            self.logger.info("Updating global best - old score %f, new score %f",current_score, self.fitness_scores_and_features[0:1]['score'])
-            self.global_best = self.fitness_scores_and_features.iloc[0]
-            pass
+                self.logger.info("Retaining global best - existing score %f, best new score %f", self.global_best[0].score, self.model_results[0].score)
         else:
-            self.logger.info("Global best reamins unchanged at %f", self.global_best[:1]['score'])
-        #self.global_best = self.global_best.append(pd.DataFrame(result).T)
+            self.global_best.append(deepcopy(top_model_result[0]))
+            self.logger.info("Setting initial global best - score %f", self.global_best[0].score)
 
     def evolve_children(self, num_of_children):
         # for i in range num_of_children, evolve a child and add to the dataframe
@@ -79,58 +84,61 @@ class Model(object):
 
         for i in range(num_of_children):
             # get first parent
-            parent1 = self.fitness_scores_and_features.iloc[np.random.randint(0, self.fitness_scores_and_features.shape[0], size=1)]
+            parent1 = self.model_results[np.random.randint(0, len(self.model_results))]
             #self.logger.info("Chose parent 1 with score %f", parent1['score'])
             # get second parent
-            parent2 = self.fitness_scores_and_features.iloc[np.random.randint(0, self.fitness_scores_and_features.shape[0], size=1)]
-            while parent1.equals(parent2):
-                parent2 = self.fitness_scores_and_features.iloc[np.random.randint(0, self.fitness_scores_and_features.shape[0], size=1)]
+            parent2 = self.model_results[np.random.randint(0, len(self.model_results))]
+            while parent1.feature_set.equals(parent2.feature_set):
+                #self.logger.info("Selected same result as both parents, reselecting 2nd parent")
+                parent2 = self.model_results[np.random.randint(0, len(self.model_results))]
 
             #self.logger.info("Chose parent 2 with score %f", parent2['score'])
 
             # perform crossover
-            self.logger.info("Evolving child from parents with scores %f %f",  parent1['score'], parent2['score'])
-            new_child = self.crossover(parent1, parent2)
+            self.logger.info("Evolving child from parents with scores %f %f",  parent1.score, parent2.score)
+            new_child = self.crossover(parent1.feature_set, parent2.feature_set)
             new_child = self.mutate(new_child, config.cfg['genetic']['mutation_rate'])
             #drop score column so remaining should just be 1s and 0s
-            new_child.drop(['score'], axis=1, inplace=True)
+            #new_child.drop(['score'], axis=1, inplace=True)
 
             #convert to boolean
             new_child = (new_child == 1)
 
             # add the resultant child to the dataframe
             #self.logger.info("Adding child %d",i)
-            children_df = children_df.append(new_child, i)
+            children_df = children_df.append([new_child], i)
         return children_df
 
     def evolve_child(self, parent1, parent2):
         pass
 
     def mutate(self, child, mutation_probability=0.02):
-        mutation_mask = np.random.choice([True,False], child.shape[1], p=[mutation_probability, 1 - mutation_probability])
+        mutation_mask = np.random.choice([True,False], child.shape[0], p=[mutation_probability, 1 - mutation_probability])
         #self.logger.info("Mutation mask with mutating probability %f, mask = %s", mutation_probability, mutation_mask)
         mutated_child = np.logical_xor(mutation_mask, child)
-        self.logger.info("Premutation child features: %d, mutation mask features: %d, mutated child features: %d", (child[:] > 0).sum(1), np.sum(mutation_mask), (mutated_child[:] > 0).sum(1))
+        self.logger.info("Premutation child features: %d, mutation mask features: %d, mutated child features: %d", (child > 0).sum(), np.sum(mutation_mask), (mutated_child > 0).sum())
         #self.logger.info("Mutated child %s", mutated_child)
         return mutated_child
 
-    def crossover(self, parent1, parent2):
+    def crossover(self, parent1_features, parent2_features):
         # one point crossover
-        crossover_point = np.random.randint(0,parent1.shape[1])
+        crossover_point = np.random.randint(0,parent1_features.shape[0])
         #print("Parent1:",parent1.iloc[0],"Parent2:",parent2.iloc[0])
         # need to reindex both parents otherwise when concatting you end up with two rows, one of which has the values for parent1 and other cols NaN and the other which has the values for parent2 and teh rest NaN
         # index      col1      col2    (crossover point)  col3      col4
         #   3         1         0                          NA         NA
         #   5         NA        NA                         0          1
-        parent1.index = [0]
-        parent2.index = [0]
-        crossover = pd.concat([parent1.ix[:,0:crossover_point],parent2.ix[:,crossover_point:]], axis=1)
+        #parent1_features.index = [0]
+        #parent2_features.index = [0]
+        #crossover = pd.concat([parent1_features.ix[:, 0:crossover_point], parent2_features.ix[:, crossover_point:]], ignore_index=True, axis=1)
+        crossover = pd.concat([parent1_features[ 0:crossover_point], parent2_features[ crossover_point:]], axis=0)
         return crossover
 
     def purge_low_scores(self, population_purge_pct):
-        self.logger.info("Purging %f population before purge count: %d", population_purge_pct, self.fitness_scores_and_features.shape[0])
-        self.fitness_scores_and_features = self.fitness_scores_and_features[:int((self.fitness_scores_and_features.shape[0] * (1-population_purge_pct)))]
-        self.logger.info("Purging - population after purge count: %d", self.fitness_scores_and_features.shape[0])
+        self.logger.info("Purging %f population before purge count: %d", population_purge_pct, len(self.model_results))
+        del self.model_results[int(len(self.model_results)*(1- population_purge_pct)):]
+        #self.model_results = self.model_results[:int((self.model_results.shape[0] * (1 - population_purge_pct)))]
+        self.logger.info("Purging - population after purge count: %d", len(self.model_results))
 
 #        self.high_scores.append(pd.DataFrame({score: features_list}))
 
