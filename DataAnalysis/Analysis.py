@@ -33,9 +33,9 @@ class Analysis(object):
         print(rf.predict_proba(instances))
         prediction, bias, contributions = ti.predict(rf, instances)
         for i in range(len(instances)):
-            print("Prediction", prediction)
-            print("Bias (trainset prior)", bias)
+            print("Prediction", prediction[i])
+            print("Bias (trainset prior)", bias[i])
             print("Feature contributions:")
             #
-            for c, feature, target in zip(contributions[0], self.features.columns, instances.iloc[0]):
+            for c, feature, target in zip(contributions[i], instances.columns, instances.iloc[i]):
                 print(feature, c, target)

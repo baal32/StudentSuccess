@@ -45,11 +45,14 @@ def main():
 
     train_features, train_target, test_features, test_target = preprocessor.split_test_train_features_targets(.75,  specific_target="APROG_PROG_STATUS")
 
-    experiments = 20
-    population_size = 10
+    experiments = 100
+    population_size = 20
     retain_best = 3
     low_score_purge_pct = .5
     initial_population_chance_bit_on = .05
+
+    estimators = 100
+    jobs = 10
     #initial population randomly generated
 
 
@@ -79,7 +82,9 @@ def main():
             #print(population)
             #print(test_features_subset.shape[1], " Features chosen ", population.columns.values)
 
-            clf = RandomForestClassifier(n_jobs=10, n_estimators=100) #, max_depth=10)
+
+
+            clf = RandomForestClassifier(n_jobs= jobs, n_estimators=estimators) #, max_depth=10)
             clf = clf.fit(train_features_subset, train_target)
             score = clf.score(test_features_subset, test_target)
             print("# Features chosen: ", test_features_subset.shape[1], " score: ", score, "top 3 features: ", analysis.important_features(clf, test_features_subset.columns.values)[0:5])
@@ -115,13 +120,13 @@ def main():
     logger.info("Global best score: %f Features: %s", model.global_best[0].score, model.global_best[0].feature_set[0:3])
     best_results = model.get_best_feature_sets(retain_best)
     for i in best_results:
-        logger.info("Final score: %f Features: %s", i.score,analysis.important_features(i.trained_classifier,i.feature_set[i.feature_set==True].index))
+        logger.info("Final score: %f Features: %s", i.score,analysis.important_features(i.trained_classifier,i.feature_set[i.feature_set].index)) #i.feature_set[i.feature_set].index) <-- i.feature_set[i.feature_set] returns only columns in feature_set where feature_set is True (feature_set is a series of true false)
 #        print("Final best ",i,"score ",p['score'],"***************************************************\n\n\n\n")
         #use crossover and mutation to get children
    #     child1, child2 = model.evolve_children(parents,2)
 
         #compare to global best and determine new global best
-    analysis.interpret_tree(best_results[0].trained_classifier)
+    analysis.interpret_tree(best_results[0].trained_classifier, test_features[test_features.columns[best_results[0].feature_set]][0:3])
 
 
 
