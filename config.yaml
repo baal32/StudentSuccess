@@ -5,7 +5,7 @@ configuration:
             mssql: DRIVER={SQL Server Native Client 11.0};SERVER=.\MASTER;DATABASE=RADAR_DW;UID=python;PWD=python
 
         queries:
-            complete: select * from student_success.complete_vw@SM_SMDW_LINK where rownum < 100000 and APROG_PROG_STATUS IN ('DC','CM') AND ACAD_PROG='UBACH' and basis_admit_code='N'
+            complete: select * from student_success.complete_vw@SM_SMDW_LINK where rownum < 100000 and APROG_PROG_STATUS IN ('DC','CM') AND ACAD_PROG='UBACH' and basis_admit_code <> 'N'
 
         cache: data_cache.pkl
 
@@ -27,14 +27,14 @@ configuration:
             - GENDER_DESC
             - ETHNICITY_GRP_IPA
             - MARITAL_STATUS
-            - HOME_COUNTRY
+            - ELM_STATUS
+            - EPT_STATUS
 
         drop_col_list:
+            - HOME_COUNTRY
             - DISABLED
             - HOUSING_INTEREST
             - PROG_ADMIT_TERM
-            - ELM_STATUS
-            - EPT_STATUS
             - APLAN_ACAD_PLAN
             - EMPLID
             - ACAD_CAREER
@@ -42,6 +42,11 @@ configuration:
             - BASIS_ADMIT_CODE_SDESC
             - DW_CURRENTROW
             - BASIS_ADMIT_CODE
+            - DEGREE_12UNITS_COMP_1YR
+            - TOTAL_UNITS_COMP_1YR
+            - DEGREE_UNITS_COMP_1YR
+            - TOTAL_12UNITS_COMP_1YR
+            - DEGREE_24UNITS_COMP_1YR
 
         outcome_list:
             - APROG_PROG_STATUS

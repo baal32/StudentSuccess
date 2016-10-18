@@ -45,13 +45,13 @@ def main():
 
     train_features, train_target, test_features, test_target = preprocessor.split_test_train_features_targets(.75,  specific_target="APROG_PROG_STATUS")
 
-    experiments = 100
+    experiments = 10
     population_size = 20
     retain_best = 3
     low_score_purge_pct = .5
     initial_population_chance_bit_on = .05
 
-    estimators = 100
+    estimators = 10
     jobs = 10
     #initial population randomly generated
 
