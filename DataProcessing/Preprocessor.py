@@ -28,10 +28,12 @@ class Processor(object):
     def drop_columns(self, col_list=None):
         if col_list is None:
             col_list = cfg['col_lists']['drop_col_list']
-        return self.df.drop(col_list, axis=1, inplace=True)
+        self.df.drop(col_list, axis=1, inplace=True)
+        return self.df
 
     def drop_rows_with_NA(self):
-        return self.df.dropna(inplace=True)
+        self.df.dropna(inplace=True)
+        return self.df
 
     def split_test_train_features_targets(self,pct=.75, target_cols=None, specific_target=None):
         if target_cols is None:
@@ -48,3 +50,4 @@ class Processor(object):
         # TODO fix this garbage
         col_list = ["SAT_VERBAL","SAT_MATH","HIP_GEL","HIP_EMPLOYMENT","HIP_CAMP","HIP_EARLYSTART","HIP_EOP"]
         self.df.fillna(value=0, inplace=True)
+        return self.df

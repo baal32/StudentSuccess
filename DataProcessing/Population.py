@@ -2,12 +2,14 @@ import numpy as np
 import pandas as pd
 import config
 from copy import deepcopy
+from DataAnalysis.Analysis import Analysis
 
-class ModelResult(object):
-    def __init__(self, trained_classifier, feature_set, score):
+class PopulationResult(object):
+    def __init__(self, trained_classifier, feature_set, score, child_id=None):
         self.trained_classifier= trained_classifier
         self.feature_set = feature_set
         self.score = score
+        self.child_id = child_id
 
     def __lt__(self, other):
         return self.score < other.score
@@ -16,7 +18,7 @@ class ModelResult(object):
 # import operator
 #sorted_x = sorted(x, key=operator.attrgetter('score'))
 
-class Model(object):
+class Population(object):
 
 
     logger = config.logger
@@ -37,9 +39,9 @@ class Model(object):
         mask = pd.DataFrame(np.random.choice([False,True],mask_shape,p=[1-probability, probability]), columns=column_headers)
         return mask
 
-    def add_results(self, score, features_list, classifier):
+    def add_results(self, score, features_list, classifier, child_id):
         #self.logger.info("Adding feature set with score %f to score dataframe", score)
-        self.model_results.append(ModelResult(classifier, features_list,score))
+        self.model_results.append(PopulationResult(classifier, features_list, score, child_id))
         #result = features_list
         #result["score"] = score
         #print("Feature list",features_list)
@@ -50,11 +52,13 @@ class Model(object):
     def reset_fitness_scores_and_features(self):
         self.model_results = []
 
+    def append_global_best_to_models(self):
+        if self.global_best:
+            self.logger.info("Adding global best - #%s to model_results prior to sorting",self.global_best[0].child_id)
+            self.model_results.append(self.global_best[0])
 
     def sort_results(self,col="score"):
         self.logger.info("Sorting results")
-        if self.global_best:
-            self.model_results.append(self.global_best[0])
         self.model_results.sort(reverse=True)
 
     def get_best_feature_sets(self, num_of_best=1):
@@ -139,6 +143,12 @@ class Model(object):
         del self.model_results[int(len(self.model_results)*(1- population_purge_pct)):]
         #self.model_results = self.model_results[:int((self.model_results.shape[0] * (1 - population_purge_pct)))]
         self.logger.info("Purging - population after purge count: %d", len(self.model_results))
+
+    def print_best_results(self, retain_best, a):
+        best_results = self.get_best_feature_sets(retain_best)
+        for i in best_results:
+            self.logger.info("Child: %s Final score: %f Features: %s", i.child_id, i.score, i.trained_classifier.important_features(i.feature_set[i.feature_set].index))
+#                        a.important_features(i.trained_classifier, i.feature_set[i.feature_set].index))
 
 #        self.high_scores.append(pd.DataFrame({score: features_list}))
 

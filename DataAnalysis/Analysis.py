@@ -12,10 +12,6 @@ class Analysis(object):
         self.features = features
         self.target = target
 
-    def random_forest(self, features, targets):
-        rf = RandomForestClassifier()
-        rf.fit(features, targets)
-
     @classmethod
     def basic_stats(self, df):
         self.logger.info("Dataset shape: %s, features: %d, observations: %d", df.shape, df.shape[1],df.shape[0])
