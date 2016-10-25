@@ -1,6 +1,6 @@
 from sklearn.svm import SVC
 from sklearn.ensemble import RandomForestClassifier
-
+from sklearn.model_selection import cross_val_score
 
 """
     def factory(type):
@@ -24,19 +24,25 @@ class Classifier(object):
     def score(self, features, target):
         return self.classifier.score(features, target)
 
+    def cross_val_score(self, features, target, scoring):
+        return cross_val_score(self.classifier, features, target, scoring='accuracy')
+
     def fit(self, features, target):
         self.classifier.fit(features, target)
+
+    def predict_proba(self, instances):
+        return self.classifier.predict_proba(instances)
 
 
 
 class SVMClassifier(Classifier):
 
     def __init__(self):
-        clf = SVC()
+        clf = SVC(kernel='linear')
         super().__init__(clf)
 
     def important_features(self,  feature_names):
-        return self.clf.coef_
+        return self.classifier.coef_
 
     def print_best_results(self, retain_best, a):
         best_results = self.get_best_feature_sets(retain_best)
@@ -53,4 +59,4 @@ class RFClassifier(Classifier):
         print ("features of rf")
 
     def important_features(self, feature_names):
-        return sorted(zip(map(lambda x: round(x, 4), self.classifier.feature_importances_), feature_names), reverse=True)
+        return sorted(zip(map(lambda x: "%.3f" % round(x, 4), self.classifier.feature_importances_), feature_names), reverse=True)

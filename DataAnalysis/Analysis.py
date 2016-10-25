@@ -1,5 +1,8 @@
 from sklearn.ensemble import RandomForestClassifier
 from treeinterpreter import treeinterpreter as ti
+
+
+
 import config
 
 class Analysis(object):
@@ -26,12 +29,17 @@ class Analysis(object):
     def interpret_tree(self, rf, instances=None):
         if instances is None:
             instances = self.features.sample(1)
-        print(rf.predict_proba(instances))
+        #print(rf.predict_proba(instances))
         prediction, bias, contributions = ti.predict(rf, instances)
         for i in range(len(instances)):
             print("Prediction", prediction[i])
             print("Bias (trainset prior)", bias[i])
             print("Feature contributions:")
-            #
-            for c, feature, target in zip(contributions[i], instances.columns, instances.iloc[i]):
-                print(feature, c, target)
+            for c, feature, actual in sorted(
+                    zip(contributions[i], instances.columns, instances.iloc[i]),
+                    key=lambda x: -abs(x[0])):
+                self.logger.info("%s Contribution: %f Actual: %f",feature, round(c, 3), round(actual,3))
+            #feature_strength = zip(contributions[i], instances.columns, instances.iloc[i])
+            #print(sorted(feature_strength, key=lambda x: x[0].max))
+#            for c, feature, target in zip(contributions[i], instances.columns, instances.iloc[i]):
+#                print(sorted(feature, c, target)

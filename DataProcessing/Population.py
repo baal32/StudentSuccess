@@ -5,11 +5,12 @@ from copy import deepcopy
 from DataAnalysis.Analysis import Analysis
 
 class PopulationResult(object):
-    def __init__(self, trained_classifier, feature_set, score, child_id=None):
+    def __init__(self, trained_classifier, feature_set, num_of_features, score, child_id=None):
         self.trained_classifier= trained_classifier
         self.feature_set = feature_set
         self.score = score
         self.child_id = child_id
+        self.num_of_features = num_of_features
 
     def __lt__(self, other):
         return self.score < other.score
@@ -31,7 +32,7 @@ class Population(object):
     global_best = []
 
     def __init__(self):
-        self.logger.info("Initializing Model")
+        self.logger.debug("Initializing Model")
 
 
     def get_random_mask(self,mask_shape, column_headers, probability=.2,):
@@ -40,8 +41,8 @@ class Population(object):
         return mask
 
     def add_results(self, score, features_list, classifier, child_id):
-        #self.logger.info("Adding feature set with score %f to score dataframe", score)
-        self.model_results.append(PopulationResult(classifier, features_list, score, child_id))
+        self.logger.debug("Adding feature set with score %f to score dataframe", score)
+        self.model_results.append(PopulationResult(classifier, features_list, features_list.sum(), score, child_id))
         #result = features_list
         #result["score"] = score
         #print("Feature list",features_list)
@@ -54,11 +55,11 @@ class Population(object):
 
     def append_global_best_to_models(self):
         if self.global_best:
-            self.logger.info("Adding global best - #%s to model_results prior to sorting",self.global_best[0].child_id)
+            self.logger.debug("Adding global best - #%s to model_results prior to sorting",self.global_best[0].child_id)
             self.model_results.append(self.global_best[0])
 
     def sort_results(self,col="score"):
-        self.logger.info("Sorting results")
+        self.logger.debug("Sorting results")
         self.model_results.sort(reverse=True)
 
     def get_best_feature_sets(self, num_of_best=1):
@@ -75,12 +76,12 @@ class Population(object):
         if self.global_best:
             if self.global_best[0] < top_model_result[0]:
                 self.global_best[0] = deepcopy(top_model_result[0])
-                self.logger.info("Updating global best - old score %f, new score %f", self.global_best[0].score , self.model_results[0].score)
+                self.logger.debug("Updating global best - old score %f, new score %f", self.global_best[0].score , self.model_results[0].score)
             else:
-                self.logger.info("Retaining global best - existing score %f, best new score %f", self.global_best[0].score, self.model_results[0].score)
+                self.logger.debug("Retaining global best - existing score %f, best new score %f", self.global_best[0].score, self.model_results[0].score)
         else:
             self.global_best.append(deepcopy(top_model_result[0]))
-            self.logger.info("Setting initial global best - score %f", self.global_best[0].score)
+            self.logger.debug("Setting initial global best - score %f", self.global_best[0].score)
 
     def evolve_children(self, num_of_children):
         # for i in range num_of_children, evolve a child and add to the dataframe
@@ -99,7 +100,7 @@ class Population(object):
             #self.logger.info("Chose parent 2 with score %f", parent2['score'])
 
             # perform crossover
-            self.logger.info("Evolving child from parents with scores %f %f",  parent1.score, parent2.score)
+            self.logger.debug("Evolving child from parents with scores %f %f",  parent1.score, parent2.score)
             new_child = self.crossover(parent1.feature_set, parent2.feature_set)
             new_child = self.mutate(new_child, config.cfg['genetic']['mutation_rate'])
             #drop score column so remaining should just be 1s and 0s
@@ -118,9 +119,9 @@ class Population(object):
 
     def mutate(self, child, mutation_probability=0.02):
         mutation_mask = np.random.choice([True,False], child.shape[0], p=[mutation_probability, 1 - mutation_probability])
-        #self.logger.info("Mutation mask with mutating probability %f, mask = %s", mutation_probability, mutation_mask)
+        #self.logger.debug("Mutation mask with mutating probability %f, mask = %s", mutation_probability, mutation_mask)
         mutated_child = np.logical_xor(mutation_mask, child)
-        self.logger.info("Premutation child features: %d, mutation mask features: %d, mutated child features: %d", (child > 0).sum(), np.sum(mutation_mask), (mutated_child > 0).sum())
+        #self.logger.info("Premutation child features: %d, mutation mask features: %d, mutated child features: %d", (child > 0).sum(), np.sum(mutation_mask), (mutated_child > 0).sum())
         #self.logger.info("Mutated child %s", mutated_child)
         return mutated_child
 
@@ -139,10 +140,10 @@ class Population(object):
         return crossover
 
     def purge_low_scores(self, population_purge_pct):
-        self.logger.info("Purging %f population before purge count: %d", population_purge_pct, len(self.model_results))
+        #self.logger.info("Purging %f population before purge count: %d", population_purge_pct, len(self.model_results))
         del self.model_results[int(len(self.model_results)*(1- population_purge_pct)):]
         #self.model_results = self.model_results[:int((self.model_results.shape[0] * (1 - population_purge_pct)))]
-        self.logger.info("Purging - population after purge count: %d", len(self.model_results))
+        self.logger.debug("Purging - population after purge count: %d", len(self.model_results))
 
     def print_best_results(self, retain_best, a):
         best_results = self.get_best_feature_sets(retain_best)

@@ -22,7 +22,7 @@ def main():
     #extract data (instantiate and call method at same time)
     full_frame = DataSource().get_all_data()
 
-    Analysis.basic_stats(full_frame)
+    #Analysis.basic_stats(full_frame)
     #preprocess data
     preprocessor = Processor(full_frame)
     full_frame = preprocessor.one_hot()
@@ -30,7 +30,7 @@ def main():
     full_frame = preprocessor.impute_missing_values()
     full_frame = preprocessor.drop_rows_with_NA()
 
-    Analysis.basic_stats(full_frame)
+    #Analysis.basic_stats(full_frame)
     #split into train and test
 
 
@@ -50,8 +50,8 @@ def main():
     train_features, train_target, test_features, test_target = preprocessor.split_test_train_features_targets(.75,  specific_target="APROG_PROG_STATUS")
     print("Train set:", len(train_features))
     #Analysis.basic_stats(train_features)
-    experiments = 3
-    population_size = 10
+    experiments = 10
+    population_size = 5
     retain_best = 3
     low_score_purge_pct = .5
     initial_population_chance_bit_on = .05
@@ -60,11 +60,11 @@ def main():
     jobs = 10
     #initial population randomly generated
 
-    classifier = RFClassifier()
+
     # experiments
     for experiment_number in range(experiments):
 
-        config.logger.info("Experiment #%d", experiment_number+1)
+        config.logger.debug("Beginning experiment #%d", experiment_number)
         # create the population that will be analyzed
         if experiment_number == 0:
             population = model.get_random_mask((population_size, train_features.shape[1]), probability=initial_population_chance_bit_on, column_headers = train_features.columns.values )
@@ -93,10 +93,12 @@ def main():
             #clf = RandomForestClassifier(n_jobs= jobs, n_estimators=estimators) #, max_depth=10)
             #clf = svm.SVC()
             #clf = clf.fit(train_features_subset, train_target)
+            # classifier = SVMClassifier()
+            classifier = RFClassifier()
             classifier.fit(train_features_subset, train_target)
 
             score = classifier.score(test_features_subset, test_target)
-            config.logger.info("#%s - Score: %f - Features (%d): %s", child_id, score, test_features_subset.shape[1], test_features_subset.columns.values[0:5])
+            #config.logger.info("#%s - Score: %f - Features (%d): %s", child_id, score, test_features_subset.shape[1], classifier.important_features( test_features_subset.columns.values)[0:5])#test_features_subset.columns.values[0:5])
             #print("#",child_id," Features chosen: ", test_features_subset.shape[1], " score: ", score)
 #            print("top 3 features: ", analysis.important_features(clf, test_features_subset.columns.values)[0:5])
             # save score and features to experiment set
@@ -114,7 +116,10 @@ def main():
         model.evaluate_global_best()
 
 #        model.print_best_results(retain_best,analysis)
-        logger.info("Global best by experiment %d: %f", experiment_number, model.global_best[0].score)
+        experiment_best = model.global_best[0]
+        logger.info("Experiment #%d Best score: %.4f Child: %s Top features: %s",
+                    experiment_number, experiment_best.score, experiment_best.child_id,
+                    experiment_best.trained_classifier.important_features(experiment_best.feature_set[experiment_best.feature_set].index ))
         # evolve children from remaining population
         population = model.evolve_children(population_size)
 
@@ -139,7 +144,7 @@ def main():
    #     child1, child2 = model.evolve_children(parents,2)
 
         #compare to global best and determine new global best
-    analysis.interpret_tree(model.get_best_feature_sets(retain_best)[0].trained_classifier, test_features[test_features.columns[model.get_best_feature_sets(retain_best)[0].feature_set]][0:3])
+    analysis.interpret_tree(model.get_best_feature_sets(retain_best)[0].trained_classifier.classifier, test_features[test_features.columns[model.get_best_feature_sets(retain_best)[0].feature_set]][0:3])
 
 
 

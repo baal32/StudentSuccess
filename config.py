@@ -10,7 +10,7 @@ with open("config.yaml") as ymlfile:
         print(exc)
 
 # get logger
-logging.basicConfig(level=logging.INFO)
+logging.basicConfig(level=logging.DEBUG)
 logger = logging.getLogger()
 fh = logging.FileHandler('output.log')
 fh.setLevel(logging.DEBUG)
