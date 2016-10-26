@@ -15,11 +15,13 @@ from DataProcessing.Preprocessor import Processor
 def main():
     """ Run the main program"""
     logger = logging.getLogger(__name__)
-    #extract data (instantiate and call method at same time)
-    full_frame = DataSource().get_all_data()
 
+    full_frame = DataSource().get_all_data()
+    target_column = "APROG_PROG_STATUS"
     preprocessor = Processor(full_frame)
-    preprocessor.split_features_targets(target_cols = None, specific_target="APROG_PROG_STATUS")
+
+    preprocessor.split_features_targets(target_cols = None, specific_target=target_column)
+
     preprocessor.one_hot()
     preprocessor.drop_columns()
     preprocessor.impute_missing_values()
@@ -60,14 +62,17 @@ def main():
             child_id = str(experiment_number)+"-"+str(i)
             analysis = Analysis(X_test, y_test)
 
-            X_train_feature_subset = X_train[X_train.columns[p]]
-            X_test_feature_subset = X_test[X_test.columns[p]]
+
 
             #classifier = SVMClassifier()
             #classifier = RFClassifier()
             classifier = KNClassifier()
-            #train test score
+
+
+            X_train_feature_subset = X_train[X_train.columns[p]]
+            X_test_feature_subset = X_test[X_test.columns[p]]
             classifier.fit(X_train_feature_subset, y_train)
+            y_predict = classifier.predict_proba()
             score = classifier.score(X_test_feature_subset, y_test)
 
 
@@ -94,7 +99,7 @@ def main():
         #cross_score = cross_val_score(experiment_best.trained_classifier.classifier, preprocessor.X, preprocessor.y, cv=5)
         #cross_score2 = cross_val_score(experiment_best.trained_classifier.classifier, preprocessor.X[preprocessor.X.columns[experiment_best.feature_set]], preprocessor.y, cv=5)
         #logger.info("Cross val score: %0.2f (+/- %0.2f)   Cross val subset score: %0.2f (+/- %0.2f)" % (cross_score.mean(), cross_score.std() * 2, cross_score2.mean(), cross_score2.std() * 2))
-        result_frame.add_result("accuracy",experiment_best.score,experiment_number)
+        result_frame.add_result("accuracy",experiment_best.score,experiment_number,target_column)
         #result_frame.add_result("cross_val_accuracy",             #cross val score
 
 

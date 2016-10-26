@@ -33,7 +33,7 @@ class Classifier(object):
         self.classifier.fit(features, target)
 
     def predict_proba(self, instances):
-        return self.classifier.predict_proba(instances)
+        return self.classifier.predict_proba()
 
 
 

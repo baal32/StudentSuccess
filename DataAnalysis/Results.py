@@ -12,12 +12,15 @@ class Results(object):
         self.name = name
         self.score_list = pd.DataFrame()
 
-    def add_result(self, score_type, score, experiment_number):
+    def add_result(self, score_type, score, experiment_number, target_column):
         self.score_list = self.score_list.append({'score_type': score_type, 'score': score, 'experiment': experiment_number}, ignore_index=True)
 
     def plot_scores(self, score_type = 'accuracy'):
         self.score_list[self.score_list['score_type'] == 'accuracy']['score'].plot()
         plt.show()
+
+    def plot_roc(self):
+        pass
 
     def write_result(self, filename):
         if filename is None:
