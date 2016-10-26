@@ -10,8 +10,11 @@ with open("config.yaml") as ymlfile:
         print(exc)
 
 # get logger
-logging.basicConfig(level=logging.DEBUG)
+#FORMAT = '%(asctime)s %(name)-12s %(levelname)-8s %(message)s'
+#logging.basicConfig(level=logging.DEBUG, format=FORMAT)
+logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger()
+
 fh = logging.FileHandler('output.log')
 fh.setLevel(logging.DEBUG)
 formatter = logging.Formatter('%(asctime)s %(name)-12s %(levelname)-8s %(message)s')

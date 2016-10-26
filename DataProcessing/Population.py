@@ -20,14 +20,9 @@ class PopulationResult(object):
 #sorted_x = sorted(x, key=operator.attrgetter('score'))
 
 class Population(object):
-
-
     logger = config.logger
-
     # list of modelresults
     model_results = []
-    #global_best = pd.DataFrame({"score": 0.0}, index=[0])
-
     # list of best scoring modelresults to keep
     global_best = []
 
@@ -126,16 +121,7 @@ class Population(object):
         return mutated_child
 
     def crossover(self, parent1_features, parent2_features):
-        # one point crossover
         crossover_point = np.random.randint(0,parent1_features.shape[0])
-        #print("Parent1:",parent1.iloc[0],"Parent2:",parent2.iloc[0])
-        # need to reindex both parents otherwise when concatting you end up with two rows, one of which has the values for parent1 and other cols NaN and the other which has the values for parent2 and teh rest NaN
-        # index      col1      col2    (crossover point)  col3      col4
-        #   3         1         0                          NA         NA
-        #   5         NA        NA                         0          1
-        #parent1_features.index = [0]
-        #parent2_features.index = [0]
-        #crossover = pd.concat([parent1_features.ix[:, 0:crossover_point], parent2_features.ix[:, crossover_point:]], ignore_index=True, axis=1)
         crossover = pd.concat([parent1_features[ 0:crossover_point], parent2_features[ crossover_point:]], axis=0)
         return crossover
 

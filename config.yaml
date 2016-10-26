@@ -9,6 +9,8 @@ configuration:
 
         cache: data_cache.pkl
 
+        results: results.pkl
+
     logging:
         output_log: output.log
 

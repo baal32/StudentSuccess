@@ -1,5 +1,6 @@
 from sklearn.ensemble import RandomForestClassifier
 from treeinterpreter import treeinterpreter as ti
+import numpy as np
 
 
 
@@ -32,13 +33,17 @@ class Analysis(object):
         #print(rf.predict_proba(instances))
         prediction, bias, contributions = ti.predict(rf, instances)
         for i in range(len(instances)):
-            print("Prediction", prediction[i])
-            print("Bias (trainset prior)", bias[i])
-            print("Feature contributions:")
-            for c, feature, actual in sorted(
-                    zip(contributions[i], instances.columns, instances.iloc[i]),
-                    key=lambda x: -abs(x[0])):
-                self.logger.info("%s Contribution: %f Actual: %f",feature, round(c, 3), round(actual,3))
+            self.logger.info("Prediction %s ----------------------------------------", prediction[i])
+            self.logger.info("Bias (trainset prior) %s", bias[i])
+            self.logger.info("Feature contributions:")
+            #for c, feature, actual in sorted(
+             #       zip(contributions[i], instances.columns, instances.iloc[i]),
+             #       key=lambda x: -abs(x[0])):
+             #   self.logger.info("%s Contribution: %f Actual: %f",feature, round(c, 3), round(actual,3))
+            for c, feature, actual in sorted(  zip(contributions[i], instances.columns, instances.iloc[i]), key=lambda x: -abs(x[0][0]))[0:5]:
+                # TODO fix rounding issue
+                # self.logger.info("%s Contribution: %s Actual: %f", feature, ["%.3f" % a for a in c], round(actual, 3))
+                self.logger.info("%s Contribution: %s Actual: %s", feature, c, actual)
             #feature_strength = zip(contributions[i], instances.columns, instances.iloc[i])
             #print(sorted(feature_strength, key=lambda x: x[0].max))
 #            for c, feature, target in zip(contributions[i], instances.columns, instances.iloc[i]):

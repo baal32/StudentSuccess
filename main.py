@@ -1,19 +1,15 @@
-from DataCollection.DataSource import DataSource
-from DataProcessing.Preprocessor import Processor
-from DataAnalysis.Plotter import Plotter
-from DataAnalysis.Analysis import Analysis
-import numpy as np
-import pandas as pd
-from sklearn.ensemble import RandomForestClassifier
-from sklearn import svm
-import logging
-from DataProcessing.Population import Population
 import cProfile
-import csv
+import logging
+
+from sklearn.model_selection import cross_val_score
+
 import config
-from DataProcessing.Classifier import RFClassifier,SVMClassifier
-
-
+from DataAnalysis.Analysis import Analysis
+from DataAnalysis.Results import Results
+from DataCollection.DataSource import DataSource
+from DataProcessing.Classifier import SVMClassifier, RFClassifier, KNClassifier
+from DataProcessing.Population import Population
+from DataProcessing.Preprocessor import Processor
 
 
 def main():
@@ -22,36 +18,24 @@ def main():
     #extract data (instantiate and call method at same time)
     full_frame = DataSource().get_all_data()
 
-    #Analysis.basic_stats(full_frame)
-    #preprocess data
     preprocessor = Processor(full_frame)
-    full_frame = preprocessor.one_hot()
-    full_frame = preprocessor.drop_columns()
-    full_frame = preprocessor.impute_missing_values()
-    full_frame = preprocessor.drop_rows_with_NA()
+    preprocessor.split_features_targets(target_cols = None, specific_target="APROG_PROG_STATUS")
+    preprocessor.one_hot()
+    preprocessor.drop_columns()
+    preprocessor.impute_missing_values()
+    #preprocessor.remove_nonvariant_features()
+    #full_frame = preprocessor.drop_rows_with_NA()
 
-    #Analysis.basic_stats(full_frame)
-    #split into train and test
+    Analysis.basic_stats(full_frame)
 
-
-    #print(train_features.columns[0:7])
-
-    # Model instnace
     model = Population()
 
-    # genetic feature selection and scoring loop
+    X_train, X_test, y_train, y_test = preprocessor.split_test_train(test_pct=0.25)
 
-    # set number of iterations
-
-
-    #classifier = Classifier()
-
-
-    train_features, train_target, test_features, test_target = preprocessor.split_test_train_features_targets(.75,  specific_target="APROG_PROG_STATUS")
-    print("Train set:", len(train_features))
+    print("Train set:", len(X_train))
     #Analysis.basic_stats(train_features)
-    experiments = 10
-    population_size = 5
+    experiments = 60
+    population_size = 10
     retain_best = 3
     low_score_purge_pct = .5
     initial_population_chance_bit_on = .05
@@ -61,48 +45,35 @@ def main():
     #initial population randomly generated
 
 
+    result_frame = Results("RFClassifier")
     # experiments
     for experiment_number in range(experiments):
 
         config.logger.debug("Beginning experiment #%d", experiment_number)
         # create the population that will be analyzed
         if experiment_number == 0:
-            population = model.get_random_mask((population_size, train_features.shape[1]), probability=initial_population_chance_bit_on, column_headers = train_features.columns.values )
-            #population = train_features[train_features.columns[feature_mask]]
-
-
-
-        # evaluate population
-        # for i in range(population_size):
+            population = model.get_random_mask((population_size, X_train.shape[1]), probability=initial_population_chance_bit_on, column_headers = X_train.columns.values )
 
         # for each experiment reset the score dataframe to be population by the newest population
         model.reset_fitness_scores_and_features()
         for i,p  in population.iterrows():
             child_id = str(experiment_number)+"-"+str(i)
-            analysis = Analysis(test_features, test_target)
+            analysis = Analysis(X_test, y_test)
 
-            #print("Train features ",train_features)
-            #print("Train feature subsetted ",population)
-            train_features_subset = train_features[train_features.columns[p]]
-            test_features_subset = test_features[test_features.columns[p]]
-            #print(population)
-            #print(test_features_subset.shape[1], " Features chosen ", population.columns.values)
+            X_train_feature_subset = X_train[X_train.columns[p]]
+            X_test_feature_subset = X_test[X_test.columns[p]]
+
+            #classifier = SVMClassifier()
+            #classifier = RFClassifier()
+            classifier = KNClassifier()
+            #train test score
+            classifier.fit(X_train_feature_subset, y_train)
+            score = classifier.score(X_test_feature_subset, y_test)
 
 
-            #print(train_features_subset.columns.values)
-            #clf = RandomForestClassifier(n_jobs= jobs, n_estimators=estimators) #, max_depth=10)
-            #clf = svm.SVC()
-            #clf = clf.fit(train_features_subset, train_target)
-            # classifier = SVMClassifier()
-            classifier = RFClassifier()
-            classifier.fit(train_features_subset, train_target)
 
-            score = classifier.score(test_features_subset, test_target)
-            #config.logger.info("#%s - Score: %f - Features (%d): %s", child_id, score, test_features_subset.shape[1], classifier.important_features( test_features_subset.columns.values)[0:5])#test_features_subset.columns.values[0:5])
-            #print("#",child_id," Features chosen: ", test_features_subset.shape[1], " score: ", score)
-#            print("top 3 features: ", analysis.important_features(clf, test_features_subset.columns.values)[0:5])
-            # save score and features to experiment set
-            #print("Feature mask",feature_mask)
+            #score = classifier.cross_val_score(train_features_subset,train_target)
+            #print(score)
             model.add_results(score, p, classifier, child_id)
             # get feature set
 
@@ -115,40 +86,27 @@ def main():
         # take the rest of the scores, append the global best, and determine new global best
         model.evaluate_global_best()
 
-#        model.print_best_results(retain_best,analysis)
         experiment_best = model.global_best[0]
-        logger.info("Experiment #%d Best score: %.4f Child: %s Top features: %s",
-                    experiment_number, experiment_best.score, experiment_best.child_id,
+        logger.info("Experiment #%d Best score: %.4f Child: %s Top features: (%d) %s",
+                    experiment_number, experiment_best.score, experiment_best.child_id, experiment_best.feature_set.sum(),
                     experiment_best.trained_classifier.important_features(experiment_best.feature_set[experiment_best.feature_set].index ))
+        # cross val score
+        #cross_score = cross_val_score(experiment_best.trained_classifier.classifier, preprocessor.X, preprocessor.y, cv=5)
+        #cross_score2 = cross_val_score(experiment_best.trained_classifier.classifier, preprocessor.X[preprocessor.X.columns[experiment_best.feature_set]], preprocessor.y, cv=5)
+        #logger.info("Cross val score: %0.2f (+/- %0.2f)   Cross val subset score: %0.2f (+/- %0.2f)" % (cross_score.mean(), cross_score.std() * 2, cross_score2.mean(), cross_score2.std() * 2))
+        result_frame.add_result("accuracy",experiment_best.score,experiment_number)
+        #result_frame.add_result("cross_val_accuracy",             #cross val score
+
+
         # evolve children from remaining population
         population = model.evolve_children(population_size)
 
-        # now that scores have been evaluated, purge poor scorers
-
-        # determine best 2 results from experiment set
-        #parents = model.get_best_feature_sets(retain_best)
-        #for i,p in parents.iterrows():
-            #print("P",p)
-            #print("Parent:",i,p)
-            #print(type(p))
-        #    print("Parent ",i,"score:",p['score']," features:",train_features.columns[p.drop('score') == 1.0].values)
-#            print(parents[p:p+1])
-#        print("Parent1",parents[:1], "Parent2",parents[1:2])
-
-    # logger.info("Global best score: %f Features: %s", model.global_best.iloc[0]['score'], model.global_best.columns[model.global_best.iloc[0].drop('score')])
+    print(result_frame.score_list)
+    result_frame.plot_scores()
+    result_frame.write_result()
     logger.info("Global best score: %f Features: %s", model.global_best[0].score, model.global_best[0].feature_set[0:3])
     model.print_best_results(retain_best,analysis)
-    #i.feature_set[i.feature_set].index) <-- i.feature_set[i.feature_set] returns only columns in feature_set where feature_set is True (feature_set is a series of true false)
-#        print("Final best ",i,"score ",p['score'],"***************************************************\n\n\n\n")
-        #use crossover and mutation to get children
-   #     child1, child2 = model.evolve_children(parents,2)
-
-        #compare to global best and determine new global best
-    analysis.interpret_tree(model.get_best_feature_sets(retain_best)[0].trained_classifier.classifier, test_features[test_features.columns[model.get_best_feature_sets(retain_best)[0].feature_set]][0:3])
-
-
-
-
+    #analysis.interpret_tree(model.get_best_feature_sets(retain_best)[0].trained_classifier.classifier, X_test[X_test.columns[model.get_best_feature_sets(retain_best)[0].feature_set]][0:3])
 
 
 
@@ -178,15 +136,6 @@ def main():
     #find most important metrics
 
     #display or visualize
-    """
-    extract_data()
-    cache_data()
-
-    run_decision_tree()
-    analyze_results()
-    pass
-    """
-
 
 
 cProfile.run(main())

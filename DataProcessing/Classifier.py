@@ -1,6 +1,8 @@
-from sklearn.svm import SVC
-from sklearn.ensemble import RandomForestClassifier
+from sklearn.ensemble import RandomForestClassifier, BaggingClassifier
+from sklearn.neighbors import KNeighborsClassifier
 from sklearn.model_selection import cross_val_score
+from sklearn.multiclass import OneVsRestClassifier
+from sklearn.svm import SVC
 
 """
     def factory(type):
@@ -24,8 +26,8 @@ class Classifier(object):
     def score(self, features, target):
         return self.classifier.score(features, target)
 
-    def cross_val_score(self, features, target, scoring):
-        return cross_val_score(self.classifier, features, target, scoring='accuracy')
+    def cross_val_score(self, features, target, scoring='accuracy'):
+        return cross_val_score(self.classifier, features, target, scoring)
 
     def fit(self, features, target):
         self.classifier.fit(features, target)
@@ -38,11 +40,12 @@ class Classifier(object):
 class SVMClassifier(Classifier):
 
     def __init__(self):
-        clf = SVC(kernel='linear')
+        n_estimators = 10
+        clf = OneVsRestClassifier(BaggingClassifier(SVC(kernel='linear', probability=True, class_weight='balanced'), max_samples=1.0 / n_estimators, n_estimators=n_estimators))
         super().__init__(clf)
 
     def important_features(self,  feature_names):
-        return self.classifier.coef_
+        pass #TODO return self.classifier.coef_
 
     def print_best_results(self, retain_best, a):
         best_results = self.get_best_feature_sets(retain_best)
@@ -60,3 +63,11 @@ class RFClassifier(Classifier):
 
     def important_features(self, feature_names):
         return sorted(zip(map(lambda x: "%.3f" % round(x, 4), self.classifier.feature_importances_), feature_names), reverse=True)
+
+class KNClassifier(Classifier):
+    def __init__(self):
+        clf = KNeighborsClassifier()
+        super().__init__(clf)
+
+    def important_features(self, feature_names):
+        print("important features")
