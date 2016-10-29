@@ -71,6 +71,11 @@ configuration:
             - ADMIT_ACAD_LOAD_LDESC
             - CSU_APP_ED_FATHER_LDESC
             - CSU_APP_ED_MOTHER_LDESC
+            - AVG_TERM_UNITS_PASSED_GPA
+            - TOT_DEGR_UNITS_YEAR1
+            - AVG_TERM_UNITS_TOTAL
+            - AVG_TERM_GPA
+            - TOT_24_UNITS_YEAR1__Yes
 
 
         outcome_list:

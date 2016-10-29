@@ -22,6 +22,17 @@ class Results(object):
     def plot_roc(self):
         pass
 
+    def plot_feature_importances(self, X, importances, indices, std):
+        # Plot the feature importances of the forest
+        plt.figure()
+        plt.title("Feature importances")
+        plt.bar(range(X.shape[1]), importances[indices],
+                color="r", yerr=std[indices], align="center")
+        plt.xticks(range(X.shape[1]), indices)
+        plt.xlim([-1, X.shape[1]])
+        plt.show()
+
+
     def write_result(self, filename):
         if filename is None:
             filename = cfg['db']['results']

@@ -1,6 +1,9 @@
 from sklearn.ensemble import RandomForestClassifier
+from sklearn.metrics import confusion_matrix
+from sklearn.preprocessing import LabelEncoder
 from treeinterpreter import treeinterpreter as ti
 import numpy as np
+import pandas as pd
 
 
 
@@ -23,6 +26,24 @@ class Analysis(object):
 
     def logistic_regression(self, features, targets):
         pass
+
+    @staticmethod
+    def confusion_matrix(y_true, y_pred):
+        return confusion_matrix(y_true, y_pred)
+
+    @staticmethod
+    def column_correlation(feature_columns, target_column):
+        lb = LabelEncoder()
+        target_column = pd.Series(lb.fit_transform(target_column))
+        df2 = pd.DataFrame(columns=["Column", "Correlation"])
+        for column in feature_columns:
+            try:
+                df2.loc[df2.shape[0]] = [column, np.abs(feature_columns[column].corr(target_column))]
+                # print(column, df[column].corr(df["APROG_PROG_STATUS"]))
+            except:
+                pass
+        return df2.sort_values(by=['Correlation'],ascending=False)
+
 
     def important_features(self,clf, feature_names):
         return sorted(zip(map(lambda x: round(x, 4), clf.feature_importances_), feature_names), reverse=True)

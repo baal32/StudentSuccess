@@ -54,11 +54,11 @@ class Processor(object):
         self.X.dropna(inplace=True)
         return self.X
 
-    def split_features_targets(self, target_cols, specific_target = "APROG_PROG_STATUS"):
+    def split_features_targets(self, target_cols):
         if target_cols is None:
             target_cols = config.cfg['col_lists']['outcome_list']
         X = self.df.drop(target_cols, axis=1)
-        y = self.df[specific_target]
+        y = self.df[target_cols]
         self.X = X
         self.y = y
         return X,y
@@ -90,3 +90,8 @@ class Processor(object):
     def train_test_split(self, test_size=0.25, random_state=42):
         self.logger.info("Splitting test and train with %f%% test data")
         return train_test_split(self.X, self.y, test_size = test_size, random_state = random_state)
+
+    def prepare_features(self):
+        self.one_hot()
+        self.drop_columns()
+        self.impute_missing_values()
