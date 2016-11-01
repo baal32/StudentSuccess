@@ -17,20 +17,25 @@ class Results(object):
 
     def plot_scores(self, score_type = 'accuracy'):
         self.score_list[self.score_list['score_type'] == 'accuracy']['score'].plot()
+        plt.title("Accuracy Score")
+        plt.ylabel("Accuracy")
+        plt.xlabel("Generation")
         plt.show()
 
     def plot_roc(self):
         pass
 
-    def plot_feature_importances(self, X, importances, indices, std):
-        # Plot the feature importances of the forest
+    @staticmethod
+    def plot_feature_importances(feature_names, importances, indices, std):
         plt.figure()
         plt.title("Feature importances")
-        plt.bar(range(X.shape[1]), importances[indices],
+        plt.ylabel("Importance")
+        plt.bar(range(feature_names.size), importances,
                 color="r", yerr=std[indices], align="center")
-        plt.xticks(range(X.shape[1]), indices)
-        plt.xlim([-1, X.shape[1]])
-        plt.show()
+        plt.xticks(range(feature_names.size), feature_names[indices], rotation=90)
+        plt.xlim([-1, feature_names.size])
+        plt.tight_layout()
+        # plt.show()
 
 
     def write_result(self, filename):

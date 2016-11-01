@@ -6,6 +6,7 @@ from sklearn.svm import SVC, LinearSVC
 import numpy as np
 import matplotlib.pyplot as plt
 import config
+from DataAnalysis.Results import Results
 
 """
     def factory(type):
@@ -77,7 +78,7 @@ class LinearSVCClassifier(Classifier):
 
 class RFClassifier(Classifier):
     def __init__(self):
-        clf = RandomForestClassifier()
+        clf = RandomForestClassifier(n_jobs=8)
         super().__init__(clf)
 
     def print_features(self):
@@ -98,42 +99,47 @@ class RFClassifier(Classifier):
                         feature_names[significant_feature_index[f]], importances[significant_feature_index[f]])
 
         # Plot the feature importances of the forest
+
         plt.figure()
         plt.title("Feature importances")
         plt.bar(range(feature_names.size), importances[indices],
                 color="r", yerr=std[indices], align="center")
         plt.xticks(range(feature_names.size), feature_names[indices], rotation=90)
-        plt.xlim([-1, feature_names.size])
+        plt.xlim([-1,feature_names.size])
         plt.tight_layout()
-        # plt.show()
-        # return sorted(zip(map(lambda x: "%.3f" % round(x, 4), self.classifier.feature_importances_), feature_names),
-        #              reverse=True)
+        #plt.show()
+        #Results.plot_feature_importances(feature_names[significant_feature_index],  importances[significant_feature_index], indices, std)
 
-    #def important_features(self, feature_names):
-    #    return sorted(zip(map(lambda x: "%.3f" % round(x, 4), self.classifier.feature_importances_), feature_names), reverse=True)
+        return sorted(zip(map(lambda x: "%.3f" % round(x, 4), self.classifier.feature_importances_), feature_names),
+                     reverse=True)
+
+
+   #def important_features(self, feature_names):
+   #    return sorted(zip(map(lambda x: "%.3f" % round(x, 4), self.classifier.feature_importances_), feature_names), reverse=True)
 
 class ETClassifier(Classifier):
-    def __init__(self):
-        clf = ExtraTreesClassifier()
-        super().__init__(clf)
+   def __init__(self):
+       clf = ExtraTreesClassifier()
+       super().__init__(clf)
 
-    def print_features(self):
-        print("features of ef")
+   def print_features(self):
+       print("features of ef")
 
-    def important_features(self, feature_names, threshold = 0.01):
-        importances = self.classifier.feature_importances_
-        std = np.std([tree.feature_importances_ for tree in self.classifier.estimators_], axis=0)
+   def important_features(self, feature_names, threshold = 0.01):
+       importances = self.classifier.feature_importances_
+       std = np.std([tree.feature_importances_ for tree in self.classifier.estimators_], axis=0)
 #        mean = np.mean([tree.tree_.threshold for tree in self.classifier.estimators_], axis=0)
-        indices = np.argsort(importances)[::-1]
+       indices = np.argsort(importances)[::-1]
 
-        significant_feature_index = indices[np.where(importances[indices] > threshold)]
-        # Print the feature ranking
-        logger.info("Feature ranking:")
+       significant_feature_index = indices[np.where(importances[indices] > threshold)]
+       # Print the feature ranking
+       logger.info("Feature ranking:")
 
-        for f in range(significant_feature_index.size):
-            logger.info("%d. feature %d %s (%f)", f + 1, significant_feature_index[f], feature_names[significant_feature_index[f]], importances[significant_feature_index[f]])
+       for f in range(significant_feature_index.size):
+           logger.info("%d. feature %d %s (%f)", f + 1, significant_feature_index[f], feature_names[significant_feature_index[f]], importances[significant_feature_index[f]])
 
-        # Plot the feature importances of the forest
+       # Plot the feature importances of the forest
+       '''
         plt.figure()
         plt.title("Feature importances")
         plt.bar(range(feature_names.size), importances[indices],
@@ -144,7 +150,7 @@ class ETClassifier(Classifier):
         #plt.show()
         #return sorted(zip(map(lambda x: "%.3f" % round(x, 4), self.classifier.feature_importances_), feature_names),
         #              reverse=True)
-
+        '''
 
 
 class KNClassifier(Classifier):

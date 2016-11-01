@@ -46,7 +46,8 @@ configuration:
             - CSU_APP_ED_FATHER_LDESC
             - CSU_APP_ED_MOTHER_LDESC
 
-
+        label_encode_list:
+            - APROG_PROG_STATUS
 
         drop_col_list:
             - LAST_PLAN

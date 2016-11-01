@@ -4,6 +4,7 @@ import pandas as pd
 import numpy as np
 from sklearn.feature_selection import VarianceThreshold
 from sklearn.model_selection import train_test_split
+from sklearn.preprocessing import LabelEncoder
 
 import config
 
@@ -28,6 +29,13 @@ class Processor(object):
         self.X = selector.transform(self.X)
         return self.X
         #return selector
+
+    def numeric_label_encoder(self, encode_columns = None):
+        if encode_columns is None:
+            encode_columns = config.cfg['col_lists']['label_encode_list']
+        le = LabelEncoder()
+        self.df[encode_columns] = le.fit_transform(self.df[encode_columns])
+        pass
 
     def list_cols_with_null_values(self):
         self.df.columns[pd.isnull(self.df).sum() > 0].tolist()
@@ -93,7 +101,8 @@ class Processor(object):
         self.logger.info("Splitting test and train with %f%% test data")
         return train_test_split(self.X, self.y, test_size = test_size, random_state = random_state)
 
-    def prepare_features(self):
+    def prepare_features(self, target_columns = None):
+        # TODO self.numeric_label_encoder(target_columns)
         self.one_hot()
         self.drop_columns()
         self.impute_missing_values()
