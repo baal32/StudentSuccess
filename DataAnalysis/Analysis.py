@@ -1,5 +1,5 @@
 from sklearn.ensemble import RandomForestClassifier
-from sklearn.metrics import confusion_matrix
+from sklearn.metrics import confusion_matrix, matthews_corrcoef
 from sklearn.preprocessing import LabelEncoder
 from treeinterpreter import treeinterpreter as ti
 import numpy as np
@@ -43,6 +43,12 @@ class Analysis(object):
             except:
                 pass
         return df2.sort_values(by=['Correlation'],ascending=False)
+
+
+    @staticmethod
+    def agg_by_target(feature_column, target_column,aggregation_method = 'AVG'):
+        df = pd.DataFrame({feature_column.name: feature_column, target_column.name: target_column})
+        config.logger.info("%s %s %s %s", aggregation_method, feature_column.index, target_column.index, df.groupby(target_column.name)[feature_column.name].mean())
 
 
     def important_features(self,clf, feature_names):

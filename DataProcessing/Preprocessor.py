@@ -32,6 +32,8 @@ class Processor(object):
     def list_cols_with_null_values(self):
         self.df.columns[pd.isnull(self.df).sum() > 0].tolist()
 
+    def list_cols_non_numeric(self):
+        print(self.X.select_dtypes(exclude=[np.number]).columns)
 
     def one_hot(self, col_list=None):
         if col_list is None:

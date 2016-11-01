@@ -5,12 +5,13 @@ from copy import deepcopy
 from DataAnalysis.Analysis import Analysis
 
 class PopulationResult(object):
-    def __init__(self, trained_classifier, feature_set, num_of_features, score, child_id=None):
+    def __init__(self, trained_classifier, classifier_parameters, feature_set, num_of_features, score, child_id=None):
         self.trained_classifier= trained_classifier
         self.feature_set = feature_set
         self.score = score
         self.child_id = child_id
         self.num_of_features = num_of_features
+        self.classifier_params = classifier_parameters
 
     def __lt__(self, other):
         return self.score < other.score
@@ -35,9 +36,9 @@ class Population(object):
         mask = pd.DataFrame(np.random.choice([False,True],mask_shape,p=[1-probability, probability]), columns=column_headers)
         return mask
 
-    def add_results(self, score, features_list, classifier, child_id):
+    def add_results(self, score, features_list, classifier,classifier_parameters, child_id):
         self.logger.debug("Adding feature set with score %f to score dataframe", score)
-        self.model_results.append(PopulationResult(classifier, features_list, features_list.sum(), score, child_id))
+        self.model_results.append(PopulationResult(classifier, classifier_parameters, features_list, features_list.sum(), score, child_id))
         #result = features_list
         #result["score"] = score
         #print("Feature list",features_list)

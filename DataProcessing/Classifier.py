@@ -2,7 +2,7 @@ from sklearn.ensemble import RandomForestClassifier, BaggingClassifier, ExtraTre
 from sklearn.neighbors import KNeighborsClassifier
 from sklearn.model_selection import cross_val_score
 from sklearn.multiclass import OneVsRestClassifier
-from sklearn.svm import SVC
+from sklearn.svm import SVC, LinearSVC
 import numpy as np
 import matplotlib.pyplot as plt
 import config
@@ -59,6 +59,22 @@ class SVMClassifier(Classifier):
             logger.info("Child: %s Final score: %f Features: %s", i.child_id, i.score,
                              a.important_features(i.trained_classifier, i.feature_set[i.feature_set].index))
 
+class LinearSVCClassifier(Classifier):
+
+    def __init__(self):
+        n_estimators = 10
+        clf = LinearSVC()
+        super().__init__(clf)
+
+    def important_features(self,  feature_names):
+        pass #TODO return self.classifier.coef_
+
+    def print_best_results(self, retain_best, a):
+        best_results = self.get_best_feature_sets(retain_best)
+        for i in best_results:
+            logger.info("Child: %s Final score: %f Features: %s", i.child_id, i.score,
+                             a.important_features(i.trained_classifier, i.feature_set[i.feature_set].index))
+
 class RFClassifier(Classifier):
     def __init__(self):
         clf = RandomForestClassifier()
@@ -67,8 +83,34 @@ class RFClassifier(Classifier):
     def print_features(self):
         print ("features of rf")
 
-    def important_features(self, feature_names):
-        return sorted(zip(map(lambda x: "%.3f" % round(x, 4), self.classifier.feature_importances_), feature_names), reverse=True)
+    def important_features(self, feature_names, threshold=0.01):
+        importances = self.classifier.feature_importances_
+        std = np.std([tree.feature_importances_ for tree in self.classifier.estimators_], axis=0)
+        #        mean = np.mean([tree.tree_.threshold for tree in self.classifier.estimators_], axis=0)
+        indices = np.argsort(importances)[::-1]
+
+        significant_feature_index = indices[np.where(importances[indices] > threshold)]
+        # Print the feature ranking
+        logger.info("Feature ranking:")
+
+        for f in range(significant_feature_index.size):
+            logger.info("%d. feature %d %s (%f)", f + 1, significant_feature_index[f],
+                        feature_names[significant_feature_index[f]], importances[significant_feature_index[f]])
+
+        # Plot the feature importances of the forest
+        plt.figure()
+        plt.title("Feature importances")
+        plt.bar(range(feature_names.size), importances[indices],
+                color="r", yerr=std[indices], align="center")
+        plt.xticks(range(feature_names.size), feature_names[indices], rotation=90)
+        plt.xlim([-1, feature_names.size])
+        plt.tight_layout()
+        # plt.show()
+        # return sorted(zip(map(lambda x: "%.3f" % round(x, 4), self.classifier.feature_importances_), feature_names),
+        #              reverse=True)
+
+    #def important_features(self, feature_names):
+    #    return sorted(zip(map(lambda x: "%.3f" % round(x, 4), self.classifier.feature_importances_), feature_names), reverse=True)
 
 class ETClassifier(Classifier):
     def __init__(self):
@@ -78,17 +120,18 @@ class ETClassifier(Classifier):
     def print_features(self):
         print("features of ef")
 
-    def important_features(self, feature_names):
+    def important_features(self, feature_names, threshold = 0.01):
         importances = self.classifier.feature_importances_
         std = np.std([tree.feature_importances_ for tree in self.classifier.estimators_], axis=0)
 #        mean = np.mean([tree.tree_.threshold for tree in self.classifier.estimators_], axis=0)
         indices = np.argsort(importances)[::-1]
 
+        significant_feature_index = indices[np.where(importances[indices] > threshold)]
         # Print the feature ranking
         logger.info("Feature ranking:")
 
-        for f in range(feature_names.size):
-            logger.info("%d. feature %d %s (%f)", f + 1, indices[f], feature_names[indices[f]], importances[indices[f]])
+        for f in range(significant_feature_index.size):
+            logger.info("%d. feature %d %s (%f)", f + 1, significant_feature_index[f], feature_names[significant_feature_index[f]], importances[significant_feature_index[f]])
 
         # Plot the feature importances of the forest
         plt.figure()

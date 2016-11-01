@@ -32,24 +32,19 @@ configuration:
             - ELM_STATUS
             - EPT_STATUS
             - ADMIT_ACAD_LOAD
-            - ATHL
-            - CAMP
-            - EARLY_START_DEST_STDNT
-            - EOP
+ #           - EARLY_START_DEST_STDNT
             - FIRST_COLLEGE
             - FIRST_DEPT
             - LAST_COLLEGE
             - LAST_DEPT
-            - FYP_COURSE_COMPLETED
-            - GEL101_COURSE_COMPLETED
-            - GEL_COURSE_COMPLETED
-            - ON_CAMPUS_JOB_EVER
-            - RECEIVED_ADVISING
-            - TOT_24_DEGR_UNITS_YEAR1
+  #          - TOT_24_DEGR_UNITS_YEAR1
             - TOT_24_UNITS_YEAR1
             - MILITARY_STATUS
-            - CSU_APP_ED_MOTHER
-            - CSU_APP_ED_FATHER
+ #           - CSU_APP_ED_MOTHER
+ #           - CSU_APP_ED_FATHER
+#            - BASIS_ADMIT_CODE_SDESC
+            - CSU_APP_ED_FATHER_LDESC
+            - CSU_APP_ED_MOTHER_LDESC
 
 
 
@@ -69,13 +64,22 @@ configuration:
             - DW_CURRENTROW
             - BASIS_ADMIT_CODE
             - ADMIT_ACAD_LOAD_LDESC
-            - CSU_APP_ED_FATHER_LDESC
-            - CSU_APP_ED_MOTHER_LDESC
             - AVG_TERM_UNITS_PASSED_GPA
-            - TOT_DEGR_UNITS_YEAR1
+  #          - TOT_DEGR_UNITS_YEAR1
             - AVG_TERM_UNITS_TOTAL
             - AVG_TERM_GPA
-            - TOT_24_UNITS_YEAR1__Yes
+            - AVG_TERM_UNITS_TAKEN_GPA
+            - AVG_TERM_GRADE_POINTS
+            - TOT_UNITS_YEAR1
+            - CSU_APP_ED_MOTHER
+            - CSU_APP_ED_FATHER
+            - ACTIVE_TERMS
+            - ENROLLED_TERMS
+ #           - TOT_24_DEGR_UNITS_YEAR1__Yes
+ #           - TOT_24_DEGR_UNITS_YEAR1__No
+ #           - TOT_24_UNITS_YEAR1__Yes
+ #          - TOT_24_UNITS_YEAR1__No
+
 
 
         outcome_list:
@@ -86,4 +90,18 @@ configuration:
             - GRADUATE_4_YEARS
             - GRADUATE_5_YEARS
             - GRADUATE_6_YEARS
+            - EXACT_2_YEARS
+            - EXACT_3_YEARS
+            - EXACT_4_YEARS
+            - EXACT_5_YEARS
+            - EXACT_6_YEARS
+            - EXACT_7_YEARS
+            - EXACT_8_YEARS
+            - WITHIN_2_YEARS
+            - WITHIN_3_YEARS
+            - WITHIN_4_YEARS
+            - WITHIN_5_YEARS
+            - WITHIN_6_YEARS
+            - WITHIN_7_YEARS
+            - WITHIN_8_YEARS
 
