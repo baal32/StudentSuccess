@@ -27,6 +27,9 @@ class Classifier(object):
     def get_params(self):
         return self.classifier.get_params()
 
+    def set_params(self, **kwargs):
+        return self.classifier.set_params(**kwargs)
+
     def score(self, features, target):
         return self.classifier.score(features, target)
 
@@ -99,16 +102,7 @@ class RFClassifier(Classifier):
                         feature_names[significant_feature_index[f]], importances[significant_feature_index[f]])
 
         # Plot the feature importances of the forest
-
-        plt.figure()
-        plt.title("Feature importances")
-        plt.bar(range(feature_names.size), importances[indices],
-                color="r", yerr=std[indices], align="center")
-        plt.xticks(range(feature_names.size), feature_names[indices], rotation=90)
-        plt.xlim([-1,feature_names.size])
-        plt.tight_layout()
-        #plt.show()
-        #Results.plot_feature_importances(feature_names[significant_feature_index],  importances[significant_feature_index], indices, std)
+        Results.plot_feature_importances(feature_names,  importances, significant_feature_index, std)
 
         return sorted(zip(map(lambda x: "%.3f" % round(x, 4), self.classifier.feature_importances_), feature_names),
                      reverse=True)

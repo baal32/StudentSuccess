@@ -136,6 +136,16 @@ class Population(object):
         best_results = self.get_best_feature_sets(retain_best)
         for i in best_results:
             self.logger.info("Child: %s Final score: %f Features: %s", i.child_id, i.score, i.trained_classifier.important_features(i.feature_set[i.feature_set].index))
+
+    def process_results(self, low_score_purge_pct):
+        self.append_global_best_to_models()
+        # sort scores
+        self.sort_results()
+        # throw away lowest scorers (population_purge) by pct
+        self.purge_low_scores(population_purge_pct=low_score_purge_pct)
+        # take the rest of the scores, append the global best, and determine new global best
+        self.evaluate_global_best()
+
 #                        a.important_features(i.trained_classifier, i.feature_set[i.feature_set].index))
 
 #        self.high_scores.append(pd.DataFrame({score: features_list}))

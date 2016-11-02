@@ -47,7 +47,7 @@ class Analysis(object):
 
     @staticmethod
     def agg_by_target(feature_column, target_column,aggregation_method = 'AVG'):
-        df = pd.DataFrame({feature_column.name: feature_column, target_column.name: target_column})
+        df = pd.DataFrame({feature_column.name: feature_column, target_column.name: target_column},dtype=float )
         config.logger.info("%s %s %s %s", aggregation_method, feature_column.index, target_column.index, df.groupby(target_column.name)[feature_column.name].mean())
 
 

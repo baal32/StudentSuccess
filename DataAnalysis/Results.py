@@ -1,6 +1,9 @@
 import pandas as pd
 import matplotlib.pyplot as plt
+import matplotlib
 from config import cfg
+
+matplotlib.style.use('ggplot')
 
 class Results(object):
 
@@ -15,12 +18,17 @@ class Results(object):
     def add_result(self, score_type, score, experiment_number, target_column):
         self.score_list = self.score_list.append({'score_type': score_type, 'score': score, 'experiment': experiment_number}, ignore_index=True)
 
-    def plot_scores(self, score_type = 'accuracy'):
-        self.score_list[self.score_list['score_type'] == 'accuracy']['score'].plot()
-        plt.title("Accuracy Score")
-        plt.ylabel("Accuracy")
-        plt.xlabel("Generation")
-        plt.show()
+    def plot_scores(self, score_type = ['Accuracy']):
+        for score in score_type:
+            score_df = self.score_list[self.score_list['score_type'] == score]
+            x_vals = score_df['experiment']
+            y_vals = score_df['score']
+            plt.title(score + " by Generation")
+            plt.ylabel(score)
+            plt.xlabel("Generation")
+            plt.plot(x_vals, y_vals)
+            plt.show()
+
 
     def plot_roc(self):
         pass
@@ -30,12 +38,12 @@ class Results(object):
         plt.figure()
         plt.title("Feature importances")
         plt.ylabel("Importance")
-        plt.bar(range(feature_names.size), importances,
+        plt.bar(range(indices.size), importances[indices],
                 color="r", yerr=std[indices], align="center")
-        plt.xticks(range(feature_names.size), feature_names[indices], rotation=90)
-        plt.xlim([-1, feature_names.size])
+        plt.xticks(range(indices.size), feature_names[indices], rotation=90)
+        plt.xlim([-1, indices.size])
         plt.tight_layout()
-        # plt.show()
+        #plt.show()
 
 
     def write_result(self, filename):
