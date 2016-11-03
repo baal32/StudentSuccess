@@ -34,6 +34,24 @@ def classification_scores(y_test, y_predict, target_column):
     #    logger.info("%s %s", score[0], score[1])
 
 
+def score_model(global_best_model):
+    pass
+
+
+def run_predictions(global_best_model, X_test, y_test, target_column):
+    X_test_subset = X_test[X_test.columns[global_best_model.feature_set]]
+    y_test_target = y_test[target_column]
+    clf = global_best_model.trained_classifier.classifier
+
+    analysis = Analysis(X_test_subset,y_test_target)
+    analysis.interpret_tree(clf,X_test_subset)
+    #for r in X_test_subset.iterrows():
+     #   clf.predict(r, )
+
+
+
+    pass
+
 
 def run_experiment(preprocessor, classifier_name, target_column, genetic_iterations, population_size):
 
@@ -125,6 +143,8 @@ def run_experiment(preprocessor, classifier_name, target_column, genetic_iterati
         # analyze best model for experiment
         generation_best_model = model.global_best[0]
         y_predict_experiment_best = generation_best_model.trained_classifier.predict(X_test[X_test.columns[generation_best_model.feature_set]])
+
+
         logger.info("Experiment #%d Best score: %.4f Child: %s  Parameters: %s",
                     iteration, generation_best_model.score, generation_best_model.child_id,generation_best_model.trained_classifier.get_params() )
         logger.info("Top features (%d): %s", generation_best_model.feature_set.sum(),
@@ -163,14 +183,32 @@ def run_experiment(preprocessor, classifier_name, target_column, genetic_iterati
         #model.print_best_results(retain_best, analysis)
 
     # global score
+
+
+
     print("\n\n\n\n\nAnalysis of final results\nGlobal best *************************************************************************************")
     global_best_model = model.global_best[0]
+
+    score_model(global_best_model)
+
     y_predict_global = global_best_model.trained_classifier.predict(X_test[X_test.columns[global_best_model.feature_set]])
+
+    print("Sanity check score %f", global_best_model.trained_classifier.score(X_test[X_test.columns[global_best_model.feature_set]], y_test[target_column]))
+
+
     logger.info("%s",classification_scores(y_test, y_predict_global, target_column))
     global_best_model.trained_classifier.important_features(global_best_model.feature_set[global_best_model.feature_set].index)
     for feature_column,_ in global_best_model.feature_set[global_best_model.feature_set].iteritems():
         Analysis.agg_by_target(preprocessor.X[feature_column], preprocessor.y[target_column],aggregation_method = 'AVG')
-        
+
+    Analysis.crosstab(y_test[target_column], y_predict_global)
+
+
+
+    logger.info("\n\n\n\Running Predictions against test data")
+
+    run_predictions(global_best_model, X_test, y_test, target_column)
+
     final_classifier = DecisionTreeClassifier()
     final_classifier.fit(X_train[X_train.columns[global_best_model.feature_set]], y_train[target_column])
     print("Final score: %f" % final_classifier.score(X_test[X_test.columns[global_best_model.feature_set]], y_test[target_column]))
@@ -218,35 +256,6 @@ def main():
     result_frame.write_result("results_"+time.strftime("%d_%m_%Y_%H%M"))
 
     #analysis.interpret_tree(model.get_best_feature_sets(retain_best)[0].trained_classifier.classifier, X_test[X_test.columns[model.get_best_feature_sets(retain_best)[0].feature_set]][0:3])
-
-
-
-    #Plotter.histogram(clf,train_features)
- #   print(clf)
-
-  #  print(clf.score(test_features,test_target))
-
-   # analysis = Analysis(test_features, test_target)
-   # print(analysis.important_features(clf,train_features))
-
-  #  loc_submission = "test.csv"
-  #  with open(loc_submission, "w") as outfile:
-  #      writer = csv.writer(outfile)
-  #      writer.writerow(["Id,Outcome"])
-  #      for e, val in enumerate(list(clf.predict(test_features))):
-  #          writer.writerow([test_emplids[e],val])
-    #genetic feature subselection
-    #create random forest and fit
-    #repeat using feature subsetting
-
-    #interpet tree
-
-
-    #interpret other metrics
-
-    #find most important metrics
-
-    #display or visualize
 
 
 cProfile.run(main())

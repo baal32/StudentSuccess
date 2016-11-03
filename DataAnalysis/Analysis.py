@@ -59,7 +59,14 @@ class Analysis(object):
             instances = self.features.sample(1)
         #print(rf.predict_proba(instances))
         prediction, bias, contributions = ti.predict(rf, instances)
-        for i in range(len(instances)):
+
+
+        #df = pd.DataFrame({"Prediction":prediction, "Bias":bias, "Contribution":contributions})
+        #for r in df[df['Prediction'][0] > 0.5].sort_values(by="Prediction", ascendingsorted(df[df['Prediction'][0] > 0.5], )
+
+        sorted_list = list(sorted(zip(prediction, bias, contributions), key=lambda x: -x[0][0]))
+        for prediction, bias, contributions in sorted(zip(prediction, bias, contributions), key=lambda x: -x[0][0]):
+#        for i in range(len(instances)):
             self.logger.info("Prediction %s ----------------------------------------", prediction[i])
             self.logger.info("Bias (trainset prior) %s", bias[i])
             self.logger.info("Feature contributions:")
@@ -67,7 +74,7 @@ class Analysis(object):
              #       zip(contributions[i], instances.columns, instances.iloc[i]),
              #       key=lambda x: -abs(x[0])):
              #   self.logger.info("%s Contribution: %f Actual: %f",feature, round(c, 3), round(actual,3))
-            for c, feature, actual in sorted(  zip(contributions[i], instances.columns, instances.iloc[i]), key=lambda x: -abs(x[0][0]))[0:5]:
+            for c, feature, actual in sorted(  zip(contributions[i], instances.columns, instances.iloc[i]), key=lambda x: -abs(x[0][0]))[0:10]:
                 # TODO fix rounding issue
                 # self.logger.info("%s Contribution: %s Actual: %f", feature, ["%.3f" % a for a in c], round(actual, 3))
                 self.logger.info("%s Contribution: %s Actual: %s", feature, c, actual)
@@ -75,3 +82,7 @@ class Analysis(object):
             #print(sorted(feature_strength, key=lambda x: x[0].max))
 #            for c, feature, target in zip(contributions[i], instances.columns, instances.iloc[i]):
 #                print(sorted(feature, c, target)
+
+    @staticmethod
+    def crosstab(y_actual, y_predict):
+        print(pd.crosstab(y_actual, y_predict, rownames=['actual'], colnames=['preds']))
