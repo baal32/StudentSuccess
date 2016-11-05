@@ -1,3 +1,5 @@
+import csv
+
 from sklearn.ensemble import RandomForestClassifier
 from sklearn.metrics import confusion_matrix, matthews_corrcoef
 from sklearn.preprocessing import LabelEncoder
@@ -54,20 +56,31 @@ class Analysis(object):
     def important_features(self,clf, feature_names):
         return sorted(zip(map(lambda x: round(x, 4), clf.feature_importances_), feature_names), reverse=True)
 
-    def interpret_tree(self, rf, instances=None):
+    def interpret_tree(self, rf, instances, full_frame):
+        identifiers = full_frame.loc[instances.index,["EMPLID", "GRADUATED"]]
+        #with open('prediction_instances.csv','wb') as csvfile:
+
+
         if instances is None:
             instances = self.features.sample(1)
         #print(rf.predict_proba(instances))
         prediction, bias, contributions = ti.predict(rf, instances)
-
+        #prediction, bias, contributions = sorted(zip(ti.predict(rf, instances)), key=lambda x: -x[0][0])
 
         #df = pd.DataFrame({"Prediction":prediction, "Bias":bias, "Contribution":contributions})
         #for r in df[df['Prediction'][0] > 0.5].sort_values(by="Prediction", ascendingsorted(df[df['Prediction'][0] > 0.5], )
+#        temp = instances
+#        temp["EMPLID"] = emplids
 
-        sorted_list = list(sorted(zip(prediction, bias, contributions), key=lambda x: -x[0][0]))
-        for prediction, bias, contributions in sorted(zip(prediction, bias, contributions), key=lambda x: -x[0][0]):
-#        for i in range(len(instances)):
-            self.logger.info("Prediction %s ----------------------------------------", prediction[i])
+        predicted_class = pd.DataFrame(np.apply_along_axis((lambda x: x[0] > x[1]), 1, prediction).astype(int), index=instances.index)
+        instances = pd.concat([identifiers, predicted_class, instances], axis=1)
+        instances.to_csv('prediction_instances.csv')
+        #sorted_list = list(sorted(zip(prediction, bias, contributions), key=lambda x: -x[0][0]))
+        #for prediction, bias, contributions in sorted(zip(prediction, bias, contributions), key=lambda x: -x[0][0]):
+        for i in range(len(instances)):
+            if np.abs(prediction[i][1] - prediction[i][0]) <= 0.8:
+                continue
+            self.logger.info("Prediction for %s - %s ----------------------------------------", instances.loc[i,["EMPLID"]],prediction[i])
             self.logger.info("Bias (trainset prior) %s", bias[i])
             self.logger.info("Feature contributions:")
             #for c, feature, actual in sorted(

@@ -97,6 +97,13 @@ class Processor(object):
         self.X.fillna(value=0, inplace=True)
         return self.X
 
+    def impute_values(self, column, condition, imputation_algorithm="mean"):
+        df = self.X
+        if imputation_algorithm == "mean":
+            df.loc[((df[column] ==  condition) | df[column].isnull()),[column]] = df[df[column] != 0][column].mean()
+        pass
+
+
     def train_test_split(self, test_size=0.25, random_state=42):
         self.logger.info("Splitting test and train with %f%% test data")
         return train_test_split(self.X, self.y, test_size = test_size, random_state = random_state)
@@ -106,3 +113,5 @@ class Processor(object):
         self.one_hot()
         self.drop_columns()
         self.impute_missing_values()
+        # TODO make this more flexible
+        [self.impute_values(column, 0, "mean") for column in config.cfg['col_lists']['impute_columns']]

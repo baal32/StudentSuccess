@@ -38,13 +38,14 @@ def score_model(global_best_model):
     pass
 
 
-def run_predictions(global_best_model, X_test, y_test, target_column):
+def run_predictions(full_frame, global_best_model, X_test, y_test, target_column):
     X_test_subset = X_test[X_test.columns[global_best_model.feature_set]]
     y_test_target = y_test[target_column]
+
     clf = global_best_model.trained_classifier.classifier
 
     analysis = Analysis(X_test_subset,y_test_target)
-    analysis.interpret_tree(clf,X_test_subset)
+    analysis.interpret_tree(clf,X_test_subset, full_frame)
     #for r in X_test_subset.iterrows():
      #   clf.predict(r, )
 
@@ -53,7 +54,8 @@ def run_predictions(global_best_model, X_test, y_test, target_column):
     pass
 
 
-def run_experiment(preprocessor, classifier_name, target_column, genetic_iterations, population_size):
+def run_experiment(full_frame, preprocessor, classifier_name, target_column, genetic_iterations, population_size):
+
 
     config.logger.info("\n\n\n\nStarting experiment using %s classifier*********************************", preprocessor.__class__)
     X_train, X_test, y_train, y_test = preprocessor.split_test_train(test_pct=0.25)
@@ -207,7 +209,7 @@ def run_experiment(preprocessor, classifier_name, target_column, genetic_iterati
 
     logger.info("\n\n\n\Running Predictions against test data")
 
-    run_predictions(global_best_model, X_test, y_test, target_column)
+    run_predictions(full_frame, global_best_model, X_test, y_test, target_column)
 
     final_classifier = DecisionTreeClassifier()
     final_classifier.fit(X_train[X_train.columns[global_best_model.feature_set]], y_train[target_column])
@@ -221,7 +223,7 @@ def main():
 
     full_frame = DataSource().get_all_data()
     Analysis.basic_stats(full_frame)
-    target_column = "GRADUATE_4_YEARS"
+    target_column = "GRADUATED"
     preprocessor = Processor(full_frame)
     preprocessor.numeric_label_encoder()
     preprocessor.split_features_targets(target_cols = None)
@@ -249,7 +251,7 @@ def main():
     genetic_iterations = 2
     population_size = 4
     for classifier in classifiers:
-        result_frame = run_experiment(preprocessor, classifier, target_column, genetic_iterations, population_size)
+        result_frame = run_experiment(full_frame, preprocessor, classifier, target_column, genetic_iterations, population_size)
 
     print(result_frame.score_list)
     result_frame.plot_scores(['Accuracy', 'F1 Score','Precision','Recall'])
