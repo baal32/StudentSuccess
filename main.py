@@ -12,7 +12,7 @@ from DataCollection.DataSource import DataSource
 from DataProcessing.Classifier import SVMClassifier, RFClassifier, KNClassifier, ETClassifier, LinearSVCClassifier
 from DataProcessing.Population import Population
 from DataProcessing.Preprocessor import Processor
-from sklearn.metrics import accuracy_score, f1_score, roc_auc_score, r2_score, precision_score, recall_score, matthews_corrcoef, confusion_matrix, classification_report
+from sklearn.metrics import accuracy_score, f1_score, roc_auc_score, r2_score, precision_score, recall_score, matthews_corrcoef, confusion_matrix, classification_report, roc_curve
 from sklearn.model_selection import RandomizedSearchCV
 import numpy as np
 
@@ -26,7 +26,8 @@ def classification_scores(y_test, y_predict, target_column):
     recall = ["Recall",recall_score(y_test[target_column], y_predict, pos_label=1)]
     matthews = ["Matthews Coefficient", matthews_corrcoef(y_test[target_column], y_predict)]
     confusion = ["Confusion Matrix", confusion_matrix(y_test[target_column], y_predict)]
-    scores = [accuracy, f1, precision, recall, matthews, confusion]
+    roc = ["ROC Score", roc_auc_score(y_test[target_column], y_predict)]
+    scores = [accuracy, f1, precision, recall, matthews, roc]
     #logger.info("%s", scores)
     #logger.info("%s", classification_report)
     return scores
@@ -99,7 +100,7 @@ def run_experiment(full_frame, preprocessor, classifier_name, target_column, gen
 
             # Tune hyperparameters
             sqrtfeat = int(np.sqrt(X_train_feature_subset.shape[1]))
-            param_grid = {"n_estimators": [10, 20, 30],
+            param_grid = {"n_estimators": [10, 25, 50],
                           "criterion": ["gini", "entropy"],
                           "max_features": [sqrtfeat - 1, sqrtfeat, sqrtfeat + 1],
                           "max_depth": [5, 10, 25],
@@ -156,6 +157,7 @@ def run_experiment(full_frame, preprocessor, classifier_name, target_column, gen
             result_frame.add_result(score[0],score[1],iteration,target_column)
         #logger.info("Cross validated score: %s",classifier.cross_val_score(X_train_feature_subset, y_train[target_column]))
 
+        Results.plot_roc(generation_best_model.trained_classifier,X_test[X_test.columns[generation_best_model.feature_set]], y_test[target_column] )
         #print_scores(y_test, y_predict, target_column)
 
 
@@ -214,6 +216,7 @@ def run_experiment(full_frame, preprocessor, classifier_name, target_column, gen
     final_classifier = DecisionTreeClassifier()
     final_classifier.fit(X_train[X_train.columns[global_best_model.feature_set]], y_train[target_column])
     print("Final score: %f" % final_classifier.score(X_test[X_test.columns[global_best_model.feature_set]], y_test[target_column]))
+
     return result_frame
 
 
@@ -248,8 +251,8 @@ def main():
     classifiers = [RFClassifier]
 
     #Analysis.basic_stats(train_features)
-    genetic_iterations = 2
-    population_size = 4
+    genetic_iterations = 10
+    population_size = 10
     for classifier in classifiers:
         result_frame = run_experiment(full_frame, preprocessor, classifier, target_column, genetic_iterations, population_size)
 

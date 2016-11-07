@@ -72,15 +72,16 @@ class Analysis(object):
 #        temp = instances
 #        temp["EMPLID"] = emplids
 
-        predicted_class = pd.DataFrame(np.apply_along_axis((lambda x: x[0] > x[1]), 1, prediction).astype(int), index=instances.index)
-        instances = pd.concat([identifiers, predicted_class, instances], axis=1)
-        instances.to_csv('prediction_instances.csv')
+        predicted_class = pd.DataFrame(np.apply_along_axis((lambda x: x[1] > x[0]),axis=1, arr=prediction).astype(int), index=instances.index)
+        instances_with_results = pd.concat([identifiers, predicted_class, instances], axis=1)
+        instances_with_results.to_csv('prediction_instances.csv')
         #sorted_list = list(sorted(zip(prediction, bias, contributions), key=lambda x: -x[0][0]))
         #for prediction, bias, contributions in sorted(zip(prediction, bias, contributions), key=lambda x: -x[0][0]):
-        for i in range(len(instances)):
+        prediction_index = 0
+        for i in range(len(instances)): #instances_with_results.index: #
             if np.abs(prediction[i][1] - prediction[i][0]) <= 0.8:
                 continue
-            self.logger.info("Prediction for %s - %s ----------------------------------------", instances.loc[i,["EMPLID"]],prediction[i])
+            self.logger.info("Prediction for %s - %s ----------------------------------------", instances_with_results.iloc[i]["EMPLID"],prediction[i])
             self.logger.info("Bias (trainset prior) %s", bias[i])
             self.logger.info("Feature contributions:")
             #for c, feature, actual in sorted(
@@ -91,6 +92,7 @@ class Analysis(object):
                 # TODO fix rounding issue
                 # self.logger.info("%s Contribution: %s Actual: %f", feature, ["%.3f" % a for a in c], round(actual, 3))
                 self.logger.info("%s Contribution: %s Actual: %s", feature, c, actual)
+            prediction_index = prediction_index + 1
             #feature_strength = zip(contributions[i], instances.columns, instances.iloc[i])
             #print(sorted(feature_strength, key=lambda x: x[0].max))
 #            for c, feature, target in zip(contributions[i], instances.columns, instances.iloc[i]):

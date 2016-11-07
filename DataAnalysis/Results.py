@@ -1,6 +1,7 @@
 import pandas as pd
 import matplotlib.pyplot as plt
 import matplotlib
+from sklearn.metrics import roc_curve, auc
 from config import cfg
 
 matplotlib.style.use('ggplot')
@@ -30,8 +31,53 @@ class Results(object):
             plt.show()
 
 
-    def plot_roc(self):
-        pass
+    @staticmethod
+    def plot_roc(clf, X_test, y_test):
+
+
+        y_pred = clf.predict_proba(X_test)[:,1]
+        fpr_rt_lm, tpr_rt_lm, _ = roc_curve(y_test, y_pred)
+
+        roc_auc = auc(fpr_rt_lm, tpr_rt_lm)
+        print("ROC AUC %0.2f" % roc_auc)
+
+        plt.figure()
+
+        plt.plot(fpr_rt_lm, tpr_rt_lm, label='%s ROC curve (area = %0.2f)' % (y_test.name, roc_auc))
+        plt.plot([0, 1], [0, 1], 'k--')
+        plt.xlim([0.0, 1.0])
+        plt.ylim([0.0, 1.05])
+        plt.xlabel('False Positive Rate')
+        plt.ylabel('True Positive Rate')
+        plt.title('ROC Curve')
+        plt.legend(loc="lower right")
+        #plt.show()
+        '''
+        fpr = dict()
+        tpr = dict()
+        roc_auc = dict()
+
+        for i in range(n_classes):
+            fpr[i], tpr[i], _ = roc_curve(y_test[:, i], y_score[:, i])
+            roc_auc[i] = auc(fpr[i], tpr[i])
+
+        # Compute micro-average ROC curve and ROC area
+        fpr["micro"], tpr["micro"], _ = roc_curve(y_test.ravel(), y_score.ravel())
+        roc_auc["micro"] = auc(fpr["micro"], tpr["micro"])
+        # Plot of a ROC curve for a specific class
+
+        plt.figure()
+        lw = 2
+        plt.plot(fpr[2], tpr[2], color='darkorange',
+                 lw=lw, label='ROC curve (area = %0.2f)' % roc_auc[2])
+        plt.plot([0, 1], [0, 1], color='navy', lw=lw, linestyle='--')
+        plt.xlim([0.0, 1.0])
+        plt.ylim([0.0, 1.05])
+        plt.xlabel('False Positive Rate')
+        plt.ylabel('True Positive Rate')
+        plt.title('Receiver operating characteristic example')
+        plt.legend(loc="lower right")
+        plt.show()'''
 
     @staticmethod
     def plot_feature_importances(feature_names, importances, indices, std):
