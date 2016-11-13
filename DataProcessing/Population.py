@@ -23,12 +23,14 @@ class PopulationResult(object):
 class Population(object):
     logger = config.logger
     # list of modelresults
-    model_results = []
+    model_results = None
     # list of best scoring modelresults to keep
-    global_best = []
+    global_best = None
 
     def __init__(self):
         self.logger.debug("Initializing Model")
+        self.global_best = []
+        self.model_results = []
 
 
     def get_random_mask(self,mask_shape, column_headers, probability=.2,):
@@ -48,6 +50,7 @@ class Population(object):
 
     def reset_fitness_scores_and_features(self):
         self.model_results = []
+        #self.global_best = []
 
     def append_global_best_to_models(self):
         if self.global_best:

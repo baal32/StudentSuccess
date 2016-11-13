@@ -1,7 +1,12 @@
 import csv
 
 from sklearn.ensemble import RandomForestClassifier
+from sklearn.metrics import accuracy_score
 from sklearn.metrics import confusion_matrix, matthews_corrcoef
+from sklearn.metrics import f1_score
+from sklearn.metrics import precision_score
+from sklearn.metrics import recall_score
+from sklearn.metrics import roc_auc_score
 from sklearn.preprocessing import LabelEncoder
 from treeinterpreter import treeinterpreter as ti
 import numpy as np
@@ -34,6 +39,22 @@ class Analysis(object):
         return confusion_matrix(y_true, y_pred)
 
     @staticmethod
+    def classification_scores(y_test, y_predict, target_column):
+        accuracy = ["Accuracy", accuracy_score(y_test[target_column], y_predict)]
+        f1 = ["F1 Score", f1_score(y_test[target_column], y_predict, pos_label=1)]
+        precision = ["Precision", precision_score(y_test[target_column], y_predict, pos_label=1)]
+        recall = ["Recall", recall_score(y_test[target_column], y_predict, pos_label=1)]
+        matthews = ["Matthews Coefficient", matthews_corrcoef(y_test[target_column], y_predict)]
+        confusion = ["Confusion Matrix", confusion_matrix(y_test[target_column], y_predict)]
+        roc = ["ROC Score", roc_auc_score(y_test[target_column], y_predict)]
+        scores = [accuracy, f1, precision, recall, matthews, roc]
+        # logger.info("%s", scores)
+        # logger.info("%s", classification_report)
+        return scores
+        # for score in scores:
+        #    logger.info("%s %s", score[0], score[1])
+
+    @staticmethod
     def column_correlation(feature_columns, target_column):
         lb = LabelEncoder()
         target_column = pd.Series(lb.fit_transform(target_column))
@@ -50,7 +71,7 @@ class Analysis(object):
     @staticmethod
     def agg_by_target(feature_column, target_column,aggregation_method = 'AVG'):
         df = pd.DataFrame({feature_column.name: feature_column, target_column.name: target_column},dtype=float )
-        config.logger.info("%s %s %s %s", aggregation_method, feature_column.index, target_column.index, df.groupby(target_column.name)[feature_column.name].mean())
+        config.logger.debug("%s %s %s %s", aggregation_method, feature_column.index, target_column.index, df.groupby(target_column.name)[feature_column.name].mean())
 
 
     def important_features(self,clf, feature_names):

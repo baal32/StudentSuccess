@@ -2,6 +2,8 @@ import cProfile
 import logging
 
 import time
+
+from sklearn.metrics import make_scorer
 from sklearn.model_selection import cross_val_score
 from sklearn.tree import DecisionTreeClassifier
 
@@ -15,24 +17,12 @@ from DataProcessing.Preprocessor import Processor
 from sklearn.metrics import accuracy_score, f1_score, roc_auc_score, r2_score, precision_score, recall_score, matthews_corrcoef, confusion_matrix, classification_report, roc_curve
 from sklearn.model_selection import RandomizedSearchCV
 import numpy as np
+import matplotlib.pyplot as plt
 
 
 logger = logging.getLogger(__name__)
 
-def classification_scores(y_test, y_predict, target_column):
-    accuracy = ["Accuracy", accuracy_score(y_test[target_column], y_predict)]
-    f1 = ["F1 Score", f1_score(y_test[target_column], y_predict, pos_label=1)]
-    precision = ["Precision", precision_score(y_test[target_column], y_predict, pos_label=1)]
-    recall = ["Recall",recall_score(y_test[target_column], y_predict, pos_label=1)]
-    matthews = ["Matthews Coefficient", matthews_corrcoef(y_test[target_column], y_predict)]
-    confusion = ["Confusion Matrix", confusion_matrix(y_test[target_column], y_predict)]
-    roc = ["ROC Score", roc_auc_score(y_test[target_column], y_predict)]
-    scores = [accuracy, f1, precision, recall, matthews, roc]
-    #logger.info("%s", scores)
-    #logger.info("%s", classification_report)
-    return scores
-    #for score in scores:
-    #    logger.info("%s %s", score[0], score[1])
+
 
 
 def score_model(global_best_model):
@@ -42,29 +32,21 @@ def score_model(global_best_model):
 def run_predictions(full_frame, global_best_model, X_test, y_test, target_column):
     X_test_subset = X_test[X_test.columns[global_best_model.feature_set]]
     y_test_target = y_test[target_column]
-
     clf = global_best_model.trained_classifier.classifier
-
     analysis = Analysis(X_test_subset,y_test_target)
-    analysis.interpret_tree(clf,X_test_subset, full_frame)
+    analysis.interpret_tree(clf,X_test_subset.iloc[0:100], full_frame)
     #for r in X_test_subset.iterrows():
      #   clf.predict(r, )
-
-
-
     pass
 
 
 def run_experiment(full_frame, preprocessor, classifier_name, target_column, genetic_iterations, population_size):
-
-
-    config.logger.info("\n\n\n\nStarting experiment using %s classifier*********************************", preprocessor.__class__)
+    scoring_func = f1_score
+    config.logger.info("\n\n\n\n%s Starting experiment using %s classifier*********************************", target_column, preprocessor.__class__)
     X_train, X_test, y_train, y_test = preprocessor.split_test_train(test_pct=0.25)
 
     #print("Train set:", X_train.columns)
     model = Population()
-
-
 
     retain_best = 1
     low_score_purge_pct = .5
@@ -96,32 +78,40 @@ def run_experiment(full_frame, preprocessor, classifier_name, target_column, gen
 
             #logger.info("X_train_feature_subset: %s", X_train_feature_subset.columns.values)
 
-
-
             # Tune hyperparameters
             sqrtfeat = int(np.sqrt(X_train_feature_subset.shape[1]))
-            param_grid = {"n_estimators": [10, 25, 50],
+            param_grid = {"n_estimators": [10, 50, 100],
                           "criterion": ["gini", "entropy"],
                           "max_features": [sqrtfeat - 1, sqrtfeat, sqrtfeat + 1],
                           "max_depth": [5, 10, 25],
                           "min_samples_split": [2, 5, 10]}
 
+            #param_grid = {"C": [1,2,3],
+            #              "loss": ["hinge","squared_hinge"],
+            #              "max_iter": [100, 500, 1000]}
             #param_grid = {"n_estimators": [1, 2, 3],
             #              "criterion": ["gini", "entropy"],
             #              "max_features": [sqrtfeat - 1, sqrtfeat, sqrtfeat + 1],
             #              "max_depth": [5, 7, 8],
             #             "min_samples_split": [2, 5, 10]}
 
-            parameter_random_search = RandomizedSearchCV(estimator=classifier.classifier, param_distributions=param_grid, n_iter=5)
+
+            fucking_scorer = make_scorer(scoring_func)
+
+            parameter_random_search = RandomizedSearchCV(scoring = fucking_scorer, estimator=classifier.classifier, param_distributions=param_grid, n_iter=5)
             parameter_random_search.fit(X_train_feature_subset, y_train[target_column])
-            logger.info("%s Random parameter score: %f, Parameters: %s, \nFeatures: %s",child_id,parameter_random_search.best_score_, parameter_random_search.best_params_, X_train_feature_subset.columns)
+            logger.debug("%s Random parameter score: %f, Parameters: %s, \nFeatures: %s",child_id,parameter_random_search.best_score_, parameter_random_search.best_params_, X_train_feature_subset.columns)
             #print(rsearch.best_estimator_)
             # end randomizzed grid search
 
             # apply tuned parameters to classifier
             classifier.set_params(**parameter_random_search.best_params_)
             classifier.fit(X_train_feature_subset, y_train[target_column])
-            score = classifier.score(X_test_feature_subset, y_test[target_column])
+            y_pred = classifier.predict(X_test_feature_subset)
+
+            #score = classifier.score(X_test_feature_subset, y_test[target_column])
+            score = fucking_scorer(classifier,X_test_feature_subset, y_test[target_column])
+            #score = fucking_scorer(classifier, y_test[target_column], y_pred)
             model.add_results(score, feature_mask, classifier, parameter_random_search.best_params_, child_id)
 
 #            y_predict_proba = classifier.predict_proba(X_test_feature_subset)
@@ -148,24 +138,13 @@ def run_experiment(full_frame, preprocessor, classifier_name, target_column, gen
         y_predict_experiment_best = generation_best_model.trained_classifier.predict(X_test[X_test.columns[generation_best_model.feature_set]])
 
 
-        logger.info("Experiment #%d Best score: %.4f Child: %s  Parameters: %s",
+        logger.info("Generation #%d Best score: %.4f Child: %s  Parameters: %s",
                     iteration, generation_best_model.score, generation_best_model.child_id,generation_best_model.trained_classifier.get_params() )
-        logger.info("Top features (%d): %s", generation_best_model.feature_set.sum(),
-                    generation_best_model.trained_classifier.important_features(
-                        generation_best_model.feature_set[generation_best_model.feature_set].index))
-        for score in classification_scores(y_test, y_predict_experiment_best, target_column):
+
+        for score in Analysis.classification_scores(y_test, y_predict_experiment_best, target_column):
             result_frame.add_result(score[0],score[1],iteration,target_column)
         #logger.info("Cross validated score: %s",classifier.cross_val_score(X_train_feature_subset, y_train[target_column]))
 
-        Results.plot_roc(generation_best_model.trained_classifier,X_test[X_test.columns[generation_best_model.feature_set]], y_test[target_column] )
-        #print_scores(y_test, y_predict, target_column)
-
-
-        #logger.info("Accuracy: %f F1: %s Precision: %f Recall: %f", accuracy_score(y_test[target_column], y_predict),f1_score(y_test[target_column], y_predict, pos_label=1),precision_score(y_test[target_column], y_predict, pos_label=1),recall_score(y_test[target_column], y_predict, pos_label=1))
-
-
-
-        #experiment_best.trained_classifier.important_features(experiment_best.feature_set[experiment_best.feature_set].index)
 
 
 
@@ -176,19 +155,7 @@ def run_experiment(full_frame, preprocessor, classifier_name, target_column, gen
         logger.info("Cross val score: %0.2f (+/- %0.2f)   Cross val subset score: %0.2f (+/- %0.2f)" % (cross_score.mean(), cross_score.std() * 2, cross_score2.mean(), cross_score2.std() * 2))
         '''
 
-        #result_frame.add_result("cross_val_accuracy",             #cross val score
-
-
-        # evolve children from remaining population
-
-
-        #logger.info("Global best score: %f Features: %s", model.global_best[0].score,
-         #           model.global_best[0].feature_set[0:3])
-        #model.print_best_results(retain_best, analysis)
-
     # global score
-
-
 
     print("\n\n\n\n\nAnalysis of final results\nGlobal best *************************************************************************************")
     global_best_model = model.global_best[0]
@@ -197,11 +164,17 @@ def run_experiment(full_frame, preprocessor, classifier_name, target_column, gen
 
     y_predict_global = global_best_model.trained_classifier.predict(X_test[X_test.columns[global_best_model.feature_set]])
 
-    print("Sanity check score %f", global_best_model.trained_classifier.score(X_test[X_test.columns[global_best_model.feature_set]], y_test[target_column]))
+    print("Sanity check score %f" % global_best_model.trained_classifier.score(X_test[X_test.columns[global_best_model.feature_set]], y_test[target_column]))
 
+    logger.info("Top features (%d): %s", global_best_model.feature_set.sum(),
+                global_best_model.trained_classifier.important_features(
+                    global_best_model.feature_set[global_best_model.feature_set].index, target_column))
 
-    logger.info("%s",classification_scores(y_test, y_predict_global, target_column))
-    global_best_model.trained_classifier.important_features(global_best_model.feature_set[global_best_model.feature_set].index)
+    if type(classifier) != LinearSVCClassifier:
+        result_frame.plot_roc(global_best_model.trained_classifier,
+                              X_test[X_test.columns[global_best_model.feature_set]], y_test[target_column])
+    logger.info("%s",Analysis.classification_scores(y_test, y_predict_global, target_column))
+    global_best_model.trained_classifier.important_features(global_best_model.feature_set[global_best_model.feature_set].index, target_column)
     for feature_column,_ in global_best_model.feature_set[global_best_model.feature_set].iteritems():
         Analysis.agg_by_target(preprocessor.X[feature_column], preprocessor.y[target_column],aggregation_method = 'AVG')
 
@@ -211,7 +184,7 @@ def run_experiment(full_frame, preprocessor, classifier_name, target_column, gen
 
     logger.info("\n\n\n\Running Predictions against test data")
 
-    run_predictions(full_frame, global_best_model, X_test, y_test, target_column)
+    #run_predictions(full_frame, global_best_model, X_test, y_test, target_column)
 
     final_classifier = DecisionTreeClassifier()
     final_classifier.fit(X_train[X_train.columns[global_best_model.feature_set]], y_train[target_column])
@@ -226,7 +199,20 @@ def main():
 
     full_frame = DataSource().get_all_data()
     Analysis.basic_stats(full_frame)
-    target_column = "GRADUATED"
+
+    # targets for FTF
+    targets = ["GRADUATED", "WITHIN_4_YEARS", "WITHIN_5_YEARS", "WITHIN_6_YEARS", "EXACT_4_YEARS", "EXACT_5_YEARS",
+               "EXACT_6_YEARS"]
+
+    targets = ["GRADUATED", "WITHIN_4_YEARS", "WITHIN_5_YEARS", "WITHIN_6_YEARS"]
+
+    # targets for transfers
+    #targets = ["GRADUATED", "WITHIN_2_YEARS", "WITHIN_3_YEARS", "WITHIN_4_YEARS", "EXACT_2_YEARS", "EXACT_3_YEARS", "EXACT_4_YEARS"]
+
+    #targets = ["GRADUATED"]
+
+
+
     preprocessor = Processor(full_frame)
     preprocessor.numeric_label_encoder()
     preprocessor.split_features_targets(target_cols = None)
@@ -240,7 +226,7 @@ def main():
     #full_frame = preprocessor.drop_rows_with_NA()
 
 
-    print(Analysis.column_correlation(preprocessor.X, preprocessor.y[target_column]))
+
 
     # classifier = SVMClassifier()
     # classifier = RFClassifier()
@@ -254,12 +240,17 @@ def main():
     genetic_iterations = 10
     population_size = 10
     for classifier in classifiers:
-        result_frame = run_experiment(full_frame, preprocessor, classifier, target_column, genetic_iterations, population_size)
+        for target_column in targets:
+            print(Analysis.column_correlation(preprocessor.X, preprocessor.y[target_column]))
+            result_frame = run_experiment(full_frame, preprocessor, classifier, target_column, genetic_iterations, population_size)
+            result_frame.plot_scores(['Accuracy', 'F1 Score', 'Precision', 'Recall', 'ROC'])
+            result_frame.write_result("results_" + time.strftime("%d_%m_%Y_%H%M"))
+            print(result_frame.score_list)
 
-    print(result_frame.score_list)
-    result_frame.plot_scores(['Accuracy', 'F1 Score','Precision','Recall'])
-    result_frame.write_result("results_"+time.strftime("%d_%m_%Y_%H%M"))
 
+
+
+    #plt.show()
     #analysis.interpret_tree(model.get_best_feature_sets(retain_best)[0].trained_classifier.classifier, X_test[X_test.columns[model.get_best_feature_sets(retain_best)[0].feature_set]][0:3])
 
 

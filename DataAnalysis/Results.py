@@ -1,3 +1,5 @@
+import time
+
 import pandas as pd
 import matplotlib.pyplot as plt
 import matplotlib
@@ -18,21 +20,23 @@ class Results(object):
 
     def add_result(self, score_type, score, experiment_number, target_column):
         self.score_list = self.score_list.append({'score_type': score_type, 'score': score, 'experiment': experiment_number}, ignore_index=True)
+        self.target_column = target_column
 
     def plot_scores(self, score_type = ['Accuracy']):
         for score in score_type:
             score_df = self.score_list[self.score_list['score_type'] == score]
             x_vals = score_df['experiment']
             y_vals = score_df['score']
+            plt.figure()
             plt.title(score + " by Generation")
             plt.ylabel(score)
             plt.xlabel("Generation")
             plt.plot(x_vals, y_vals)
-            plt.show()
+            plt.savefig("Results/"+self.target_column + "_" + score + time.strftime("%d_%m_%Y_%H%M"), bbox_inches='tight')
+            #plt.show()
 
 
-    @staticmethod
-    def plot_roc(clf, X_test, y_test):
+    def plot_roc(self,clf, X_test, y_test):
 
 
         y_pred = clf.predict_proba(X_test)[:,1]
@@ -51,6 +55,7 @@ class Results(object):
         plt.ylabel('True Positive Rate')
         plt.title('ROC Curve')
         plt.legend(loc="lower right")
+        plt.savefig("Results/"+self.target_column + "_ROC_" + time.strftime("%d_%m_%Y_%H%M"), bbox_inches='tight')
         #plt.show()
         '''
         fpr = dict()
@@ -80,22 +85,35 @@ class Results(object):
         plt.show()'''
 
     @staticmethod
-    def plot_feature_importances(feature_names, importances, indices, std):
+    def plot_feature_importances_bak(feature_names, importances, indices, std):
         plt.figure()
         plt.title("Feature importances")
-        plt.ylabel("Importance")
-        plt.bar(range(indices.size), importances[indices],
+        plt.xlabel("Importance")
+        plt.barh(range(indices.size), importances[indices].reverse(),
                 color="r", yerr=std[indices], align="center")
-        plt.xticks(range(indices.size), feature_names[indices], rotation=90)
+        plt.xticks(range(indices.size), feature_names[indices].replace("_"," ").reverse(), rotation=90)
         plt.xlim([-1, indices.size])
         plt.tight_layout()
+        #plt.show()
+
+    @staticmethod
+    def plot_feature_importances(feature_names, importances, indices, std, target_column):
+        plt.figure(figsize=(12,6))
+        plt.title("Feature importances")
+        plt.xlabel("Importance")
+        plt.barh(range(indices.size), importances[indices][::-1],
+                color="r", yerr=std[indices][::-1], align="center")
+        plt.yticks(range(indices.size), feature_names[indices]._data[::-1])
+        #plt.xlim([-1, indices.size])
+        plt.tight_layout()
+        plt.savefig("Results/"+target_column + "_FEATURES_" + time.strftime("%d_%m_%Y_%H%M"), bbox_inches='tight')
         #plt.show()
 
 
     def write_result(self, filename):
         if filename is None:
             filename = cfg['db']['results']
-        self.score_list.to_pickle(filename)
+        self.score_list.to_pickle("Results/"+filename)
 
     def plot_results(self):
         plt.figure().set_size_inches(8, 6)

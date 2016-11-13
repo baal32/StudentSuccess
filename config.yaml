@@ -5,8 +5,7 @@ configuration:
             mssql: DRIVER={SQL Server Native Client 11.0};SERVER=.\MASTER;DATABASE=RADAR_DW;UID=python;PWD=python
 
         queries:
-            complete: select DECODE(APROG_PROG_STATUS, 'DC', 0, 1) AS GRADUATED, a.* from student_success.complete_vw@SM_SMDW_LINK a where APROG_PROG_STATUS IN ('DC','CM') AND ACAD_PROG='UBACH' and basis_admit_code = 'N'
-
+            complete: select DECODE(APROG_PROG_STATUS, 'DC', 0, 1) AS GRADUATED, a.* from student_success.complete_vw@SM_SMDW_LINK a where APROG_PROG_STATUS IN ('DC','CM') AND PROG_ADMIT_TERM BETWEEN '2000' AND '2124' AND ACAD_PROG='UBACH' and ADMIT_TYPE='5'
         cache: data_cache.pkl
 
         results: results.pkl
@@ -24,8 +23,8 @@ configuration:
             - GE_ENGLISH_COMPOSITION_STATUS
             - GE_ORAL_COMMUNICATIONS_STATUS
             - GE_MATH_STATUS
-            - COLLEGE
-            - DEPARTMENT
+#            - COLLEGE
+#            - DEPARTMENT
             - GENDER_DESC
             - ETHNICITY_GRP_IPA
             - MARITAL_STATUS
@@ -37,6 +36,8 @@ configuration:
             - FIRST_DEPT
             - LAST_COLLEGE
             - LAST_DEPT
+            - FIRST_PLAN
+            - LAST_PLAN
   #          - TOT_24_DEGR_UNITS_YEAR1
 #            - TOT_24_UNITS_YEAR1
             - MILITARY_STATUS
@@ -45,13 +46,51 @@ configuration:
 #            - BASIS_ADMIT_CODE_SDESC
             - CSU_APP_ED_FATHER_LDESC
             - CSU_APP_ED_MOTHER_LDESC
+            - SUPPORT_STATUS_FIRST
+            - SUPPORT_STATUS_LAST
+            - ADMIT_TYPE_LDESC
+            - RESIDENCY_CODE_LDESC
+            - ELM_STATUS_LDESC
+            - EPT_STATUS_LDESC
+            - DEGREE_OBJECTIVE_SDESC
+            - BASIS_ADMIT_CODE_SDESC
+            - ADMIT_ACAD_LOAD_LDESC
 
         label_encode_list:
             - APROG_PROG_STATUS
 
         drop_col_list:
-            - LAST_PLAN
-            - FIRST_PLAN
+        # GPA
+            - PREV_TERM_GPA
+            - FIRST_TERM_GPA
+            - LAST_TERM_GPA
+            - MAX_TERM_GPA
+            - AVG_CSUSM_GPA
+            - MIN_TERM_GPA
+            - MAX_CSUSM_GPA
+            - AVG_TERM_GPA
+            - MIN_CSUSM_GPA
+            - CSUSM_GPA_FINAL
+            - CSUSM_GPA_FIRST_TERM
+            - MAX_CUM_GPA
+            - AVG_CUM_GPA
+            - MIN_CUM_GPA
+            - CSUSM_GPA_FIRST_YEAR
+            - LAST_DEPT__Undeclared
+            - LAST_PLAN__UNDL
+        # UNITS
+            - AVG_TERM_UNITS_TOTAL
+            - AVG_TERM_UNITS_PASSED_GPA
+            - AVG_TERM_UNITS_TAKEN_GPA
+            - TOT_24_DEGR_UNITS_YEAR1
+            - TOT_24_UNITS_YEAR1
+            - TOT_DEGR_UNITS_YEAR1
+            - TOT_UNITS_YEAR1
+            - AVG_TERM_GRADE_POINTS
+        # TERMS
+            - ACTIVE_TERMS
+            - ENROLLED_TERMS
+
             - DW_ROWRANK
             - HOME_COUNTRY
             - DISABLED
@@ -61,28 +100,18 @@ configuration:
             - EMPLID
             - ACAD_CAREER
             - ACAD_PROG
-            - BASIS_ADMIT_CODE_SDESC
             - DW_CURRENTROW
             - BASIS_ADMIT_CODE
-            - ADMIT_ACAD_LOAD_LDESC
-            - AVG_TERM_UNITS_PASSED_GPA
-  #          - TOT_DEGR_UNITS_YEAR1
-            - AVG_TERM_UNITS_TOTAL
-            - AVG_TERM_GPA
-            - AVG_TERM_UNITS_TAKEN_GPA
-            - AVG_TERM_GRADE_POINTS
-            - TOT_UNITS_YEAR1
             - CSU_APP_ED_MOTHER
             - CSU_APP_ED_FATHER
-            - ACTIVE_TERMS
-            - ENROLLED_TERMS
- #           - TOT_24_DEGR_UNITS_YEAR1__Yes
- #           - TOT_24_DEGR_UNITS_YEAR1__No
- #           - TOT_24_UNITS_YEAR1__Yes
- #          - TOT_24_UNITS_YEAR1__No
+
+
+
 
         impute_columns:
             - HS_GPA
+            - SAT_VERBAL
+            - SAT_MATH
 
 
         outcome_list:

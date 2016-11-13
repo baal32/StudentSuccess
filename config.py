@@ -12,7 +12,7 @@ with open("config.yaml") as ymlfile:
 # get logger
 #FORMAT = '%(asctime)s %(name)-12s %(levelname)-8s %(message)s'
 #logging.basicConfig(level=logging.DEBUG, format=FORMAT)
-logging.basicConfig(level=logging.INFO, filemode='w')
+logging.basicConfig(level=logging.DEBUG, filemode='w')
 logger = logging.getLogger()
 
 fh = logging.FileHandler('output.log', mode='w')
