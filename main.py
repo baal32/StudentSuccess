@@ -201,10 +201,10 @@ def main():
     Analysis.basic_stats(full_frame)
 
     # targets for FTF
-    targets = ["GRADUATED", "WITHIN_4_YEARS", "WITHIN_5_YEARS", "WITHIN_6_YEARS", "EXACT_4_YEARS", "EXACT_5_YEARS",
-               "EXACT_6_YEARS"]
-
+    # targets = ["GRADUATED", "WITHIN_2_YEARS", "WITHIN_3_YEARS", "WITHIN_4_YEARS"]
     targets = ["GRADUATED", "WITHIN_4_YEARS", "WITHIN_5_YEARS", "WITHIN_6_YEARS"]
+    targets = ["RETAIN_1_YEAR", "RETAIN_2_YEAR", "RETAIN_3_YEAR"]
+    #targets = ["GRADUATED", "WITHIN_2_YEARS", "WITHIN_3_YEARS", "WITHIN_4_YEARS"]
 
     # targets for transfers
     #targets = ["GRADUATED", "WITHIN_2_YEARS", "WITHIN_3_YEARS", "WITHIN_4_YEARS", "EXACT_2_YEARS", "EXACT_3_YEARS", "EXACT_4_YEARS"]
