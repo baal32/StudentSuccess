@@ -39,7 +39,7 @@ class Population(object):
         return mask
 
     def add_results(self, score, features_list, classifier,classifier_parameters, child_id):
-        self.logger.debug("Adding feature set with score %f to score dataframe", score)
+        #self.logger.debug("Adding feature set with score %f to score dataframe", score)
         self.model_results.append(PopulationResult(classifier, classifier_parameters, features_list, features_list.sum(), score, child_id))
         #result = features_list
         #result["score"] = score
@@ -54,11 +54,11 @@ class Population(object):
 
     def append_global_best_to_models(self):
         if self.global_best:
-            self.logger.debug("Adding global best - #%s to model_results prior to sorting",self.global_best[0].child_id)
+            #self.logger.debug("Adding global best - #%s to model_results prior to sorting",self.global_best[0].child_id)
             self.model_results.append(self.global_best[0])
 
     def sort_results(self,col="score"):
-        self.logger.debug("Sorting results")
+        #self.logger.debug("Sorting results")
         self.model_results.sort(reverse=True)
 
     def get_best_feature_sets(self, num_of_best=1):
@@ -99,7 +99,7 @@ class Population(object):
             #self.logger.info("Chose parent 2 with score %f", parent2['score'])
 
             # perform crossover
-            self.logger.debug("Evolving child from parents with scores %f %f",  parent1.score, parent2.score)
+            #self.logger.debug("Evolving child from parents with scores %f %f",  parent1.score, parent2.score)
             new_child = self.crossover(parent1.feature_set, parent2.feature_set)
             new_child = self.mutate(new_child, config.cfg['genetic']['mutation_rate'])
             #drop score column so remaining should just be 1s and 0s
@@ -133,12 +133,12 @@ class Population(object):
         #self.logger.info("Purging %f population before purge count: %d", population_purge_pct, len(self.model_results))
         del self.model_results[int(len(self.model_results)*(1- population_purge_pct)):]
         #self.model_results = self.model_results[:int((self.model_results.shape[0] * (1 - population_purge_pct)))]
-        self.logger.debug("Purging - population after purge count: %d", len(self.model_results))
+        #self.logger.debug("Purging - population after purge count: %d", len(self.model_results))
 
     def print_best_results(self, retain_best, a):
         best_results = self.get_best_feature_sets(retain_best)
         for i in best_results:
-            self.logger.info("Child: %s Final score: %f Features: %s", i.child_id, i.score, i.trained_classifier.important_features(i.feature_set[i.feature_set].index))
+            self.logger.debug("Child: %s Final score: %f Features: %s", i.child_id, i.score, i.trained_classifier.important_features(i.feature_set[i.feature_set].index))
 
     def process_results(self, low_score_purge_pct):
         self.append_global_best_to_models()

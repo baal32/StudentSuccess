@@ -1,24 +1,20 @@
 import cProfile
 import logging
-
 import time
 
+import numpy as np
+from sklearn.ensemble import RandomForestClassifier
+from sklearn.metrics import f1_score
 from sklearn.metrics import make_scorer
-from sklearn.model_selection import cross_val_score
+from sklearn.model_selection import RandomizedSearchCV
 from sklearn.tree import DecisionTreeClassifier
 
 import config
 from DataAnalysis.Analysis import Analysis
 from DataAnalysis.Results import Results
 from DataCollection.DataSource import DataSource
-from DataProcessing.Classifier import SVMClassifier, RFClassifier, KNClassifier, ETClassifier, LinearSVCClassifier
 from DataProcessing.Population import Population
 from DataProcessing.Preprocessor import Processor
-from sklearn.metrics import accuracy_score, f1_score, roc_auc_score, r2_score, precision_score, recall_score, matthews_corrcoef, confusion_matrix, classification_report, roc_curve
-from sklearn.model_selection import RandomizedSearchCV
-import numpy as np
-import matplotlib.pyplot as plt
-
 
 logger = logging.getLogger(__name__)
 
@@ -41,9 +37,9 @@ def run_predictions(full_frame, global_best_model, X_test, y_test, target_column
 
 
 def run_experiment(full_frame, preprocessor, classifier_name, target_column, genetic_iterations, population_size):
-    scoring_func = f1_score
+    custom_scorer = make_scorer(f1_score)
     config.logger.info("\n\n\n\n%s Starting experiment using %s classifier*********************************", target_column, preprocessor.__class__)
-    X_train, X_test, y_train, y_test = preprocessor.split_test_train(test_pct=0.25)
+    X_train, X_test, y_train, y_test = preprocessor.split_test_train(test_pct=0.15)
 
     #print("Train set:", X_train.columns)
     model = Population()
@@ -66,11 +62,9 @@ def run_experiment(full_frame, preprocessor, classifier_name, target_column, gen
         model.reset_fitness_scores_and_features()
         for child_number,feature_mask  in population.iterrows():
             child_id = str(iteration)+"-"+str(child_number)
-            logger.debug("Child: %s", child_id)
+            #logger.debug("Child: %s", child_id)
 
             classifier = classifier_name()
-
-            #analysis = Analysis(X_test, y_test)
 
             # Apply population mask to feature set
             X_train_feature_subset = X_train[X_train.columns[feature_mask]]
@@ -80,10 +74,10 @@ def run_experiment(full_frame, preprocessor, classifier_name, target_column, gen
 
             # Tune hyperparameters
             sqrtfeat = int(np.sqrt(X_train_feature_subset.shape[1]))
-            param_grid = {"n_estimators": [10, 50, 100],
+            param_grid = {"n_estimators": [10, 25, 50],
                           "criterion": ["gini", "entropy"],
                           "max_features": [sqrtfeat - 1, sqrtfeat, sqrtfeat + 1],
-                          "max_depth": [5, 10, 25],
+                          "max_depth": [3, 6, 9],
                           "min_samples_split": [2, 5, 10]}
 
             #param_grid = {"C": [1,2,3],
@@ -96,23 +90,34 @@ def run_experiment(full_frame, preprocessor, classifier_name, target_column, gen
             #             "min_samples_split": [2, 5, 10]}
 
 
-            fucking_scorer = make_scorer(scoring_func)
 
-            parameter_random_search = RandomizedSearchCV(scoring = fucking_scorer, estimator=classifier.classifier, param_distributions=param_grid, n_iter=5)
+
+            parameter_random_search = RandomizedSearchCV(scoring = custom_scorer, estimator=classifier, param_distributions=param_grid, n_iter=5)
             parameter_random_search.fit(X_train_feature_subset, y_train[target_column])
-            logger.debug("%s Random parameter score: %f, Parameters: %s, \nFeatures: %s",child_id,parameter_random_search.best_score_, parameter_random_search.best_params_, X_train_feature_subset.columns)
+            random_search_best_score = parameter_random_search.best_score_
+            random_search_best_params = parameter_random_search.best_params_
+            random_search_best_estimator = parameter_random_search.best_estimator_
+            model.add_results(random_search_best_score, feature_mask, random_search_best_estimator, random_search_best_params, child_id)
+
+            #logger.debug("%s Random parameter score: %f, Parameters: %s, \nFeatures: %s",child_id,parameter_random_search.best_score_, parameter_random_search.best_params_, X_train_feature_subset.columns)
             #print(rsearch.best_estimator_)
             # end randomizzed grid search
 
             # apply tuned parameters to classifier
-            classifier.set_params(**parameter_random_search.best_params_)
-            classifier.fit(X_train_feature_subset, y_train[target_column])
-            y_pred = classifier.predict(X_test_feature_subset)
+            #classifier.set_params(**parameter_random_search.best_params_)
+            #classifier.fit(X_train_feature_subset, y_train[target_column])
+            #y_pred = classifier.predict(X_test_feature_subset)
 
             #score = classifier.score(X_test_feature_subset, y_test[target_column])
-            score = fucking_scorer(classifier,X_test_feature_subset, y_test[target_column])
+            #score = custom_scorer(classifier,X_test_feature_subset, y_test[target_column])
+
+            # score without test data to prevent information leakage into pipeline
+            #score = custom_scorer(classifier,X_train_feature_subset, y_train[target_column])
+
+            # score against test data for results dataframe
+            #test_score = custom_scorer(classifier,X_test_feature_subset, y_test[target_column])
             #score = fucking_scorer(classifier, y_test[target_column], y_pred)
-            model.add_results(score, feature_mask, classifier, parameter_random_search.best_params_, child_id)
+
 
 #            y_predict_proba = classifier.predict_proba(X_test_feature_subset)
             #y_predict = rsearch.predict(X_test_feature_subset)
@@ -167,14 +172,12 @@ def run_experiment(full_frame, preprocessor, classifier_name, target_column, gen
     print("Sanity check score %f" % global_best_model.trained_classifier.score(X_test[X_test.columns[global_best_model.feature_set]], y_test[target_column]))
 
     logger.info("Top features (%d): %s", global_best_model.feature_set.sum(),
-                global_best_model.trained_classifier.important_features(
-                    global_best_model.feature_set[global_best_model.feature_set].index, target_column))
+                Analysis.important_features(global_best_model.trained_classifier,global_best_model.feature_set[global_best_model.feature_set].index, target_column, threshold=0.05))
 
-    if type(classifier) != LinearSVCClassifier:
-        result_frame.plot_roc(global_best_model.trained_classifier,
-                              X_test[X_test.columns[global_best_model.feature_set]], y_test[target_column])
+    #if type(classifier) != LinearSVCClassifier:
+    result_frame.plot_roc(global_best_model.trained_classifier, X_test[X_test.columns[global_best_model.feature_set]], y_test[target_column])
     logger.info("%s",Analysis.classification_scores(y_test, y_predict_global, target_column))
-    global_best_model.trained_classifier.important_features(global_best_model.feature_set[global_best_model.feature_set].index, target_column)
+    #global_best_model.trained_classifier.important_features(global_best_model.feature_set[global_best_model.feature_set].index, target_column)
     for feature_column,_ in global_best_model.feature_set[global_best_model.feature_set].iteritems():
         Analysis.agg_by_target(preprocessor.X[feature_column], preprocessor.y[target_column],aggregation_method = 'AVG')
 
@@ -203,7 +206,7 @@ def main():
     # targets for FTF
     # targets = ["GRADUATED", "WITHIN_2_YEARS", "WITHIN_3_YEARS", "WITHIN_4_YEARS"]
     targets = ["GRADUATED", "WITHIN_4_YEARS", "WITHIN_5_YEARS", "WITHIN_6_YEARS"]
-    targets = ["RETAIN_1_YEAR", "RETAIN_2_YEAR", "RETAIN_3_YEAR"]
+    targets = ["GRADUATED", "WITHIN_4_YEARS", "WITHIN_5_YEARS", "WITHIN_6_YEARS", "RETAIN_1_YEAR", "RETAIN_2_YEAR", "RETAIN_3_YEAR"]
     #targets = ["GRADUATED", "WITHIN_2_YEARS", "WITHIN_3_YEARS", "WITHIN_4_YEARS"]
 
     # targets for transfers
@@ -234,11 +237,11 @@ def main():
     # classifier = KNClassifier()
 
     # classifiers = [RFClassifier, ETClassifier, KNClassifier]
-    classifiers = [RFClassifier]
+    classifiers = [RandomForestClassifier]
 
     #Analysis.basic_stats(train_features)
-    genetic_iterations = 10
-    population_size = 10
+    genetic_iterations = 4
+    population_size = 4
     for classifier in classifiers:
         for target_column in targets:
             print(Analysis.column_correlation(preprocessor.X, preprocessor.y[target_column]))

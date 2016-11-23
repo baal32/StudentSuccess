@@ -114,21 +114,4 @@ class Results(object):
         if filename is None:
             filename = cfg['db']['results']
         self.score_list.to_pickle("Results/"+filename)
-
-    def plot_results(self):
-        plt.figure().set_size_inches(8, 6)
-        plt.semilogx(alphas, scores)
-
-        # plot error lines showing +/- std. errors of the scores
-        std_error = scores_std / np.sqrt(n_folds)
-
-        plt.semilogx(alphas, scores + std_error, 'b--')
-        plt.semilogx(alphas, scores - std_error, 'b--')
-
-        # alpha=0.2 controls the translucency of the fill color
-        plt.fill_between(alphas, scores + std_error, scores - std_error, alpha=0.2)
-
-        plt.ylabel('CV score +/- std error')
-        plt.xlabel('alpha')
-        plt.axhline(np.max(scores), linestyle='--', color='.5')
-        plt.xlim([alphas[0], alphas[-1]])
+        self.score_list.to_csv("Results/"+filename + ".csv")

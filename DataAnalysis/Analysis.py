@@ -9,6 +9,7 @@ from sklearn.metrics import recall_score
 from sklearn.metrics import roc_auc_score
 from sklearn.preprocessing import LabelEncoder
 from treeinterpreter import treeinterpreter as ti
+from DataAnalysis.Results import Results
 import numpy as np
 import pandas as pd
 
@@ -73,9 +74,29 @@ class Analysis(object):
         df = pd.DataFrame({feature_column.name: feature_column, target_column.name: target_column},dtype=float )
         config.logger.debug("%s %s %s %s", aggregation_method, feature_column.index, target_column.index, df.groupby(target_column.name)[feature_column.name].mean())
 
+    @classmethod
+    def important_features(cls,tree_classifier, feature_names, target_column, threshold=0.05):
+        importances = tree_classifier.feature_importances_
+        std = np.std([tree.feature_importances_ for tree in tree_classifier.estimators_], axis=0)
+        #        mean = np.mean([tree.tree_.threshold for tree in self.classifier.estimators_], axis=0)
+        indices = np.argsort(importances)[::-1]
 
-    def important_features(self,clf, feature_names):
-        return sorted(zip(map(lambda x: round(x, 4), clf.feature_importances_), feature_names), reverse=True)
+        significant_feature_index = indices[np.where(importances[indices] > threshold)]
+        # Print the feature ranking
+        cls.logger.debug("Feature ranking:")
+
+        for f in range(significant_feature_index.size):
+            cls.logger.debug("%d. feature %d %s (%f)", f + 1, significant_feature_index[f],
+                        feature_names[significant_feature_index[f]], importances[significant_feature_index[f]])
+
+        # Plot the feature importances of the forest
+        Results.plot_feature_importances(feature_names,  importances, significant_feature_index, std, target_column)
+
+        return sorted(zip(map(lambda x: "%.3f" % round(x, 4), tree_classifier.feature_importances_), feature_names),
+                     reverse=True)
+
+    #def important_features(self,clf, feature_names):
+    #    return sorted(zip(map(lambda x: round(x, 4), clf.feature_importances_), feature_names), reverse=True)
 
     def interpret_tree(self, rf, instances, full_frame):
         identifiers = full_frame.loc[instances.index,["EMPLID", "GRADUATED"]]

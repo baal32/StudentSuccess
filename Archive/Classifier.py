@@ -90,7 +90,7 @@ class RFClassifier(Classifier):
     def print_features(self):
         print ("features of rf")
 
-    def important_features(self, feature_names, target_column, threshold=0.01):
+    def important_features(self, feature_names, target_column, threshold=0.05):
         importances = self.classifier.feature_importances_
         std = np.std([tree.feature_importances_ for tree in self.classifier.estimators_], axis=0)
         #        mean = np.mean([tree.tree_.threshold for tree in self.classifier.estimators_], axis=0)
