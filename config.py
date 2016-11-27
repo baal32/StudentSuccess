@@ -17,7 +17,7 @@ logger = logging.getLogger()
 
 fh = logging.FileHandler('Results/output.log', mode='w')
 fh.setLevel(logging.DEBUG)
-formatter = logging.Formatter('%(asctime)s %(name)-12s %(levelname)-8s %(message)s')
-fh.setFormatter(formatter)
+#formatter = logging.Formatter('%(asctime)s %(name)-12s %(levelname)-8s %(message)s')
+#fh.setFormatter(formatter)
 logger.addHandler(fh)
 

@@ -1,10 +1,14 @@
 import time
+from platform import system
 
 import pandas as pd
 import matplotlib.pyplot as plt
 import matplotlib
 from sklearn.metrics import roc_curve, auc
+from sklearn import tree
+from subprocess import check_call
 from config import cfg
+
 
 matplotlib.style.use('ggplot')
 
@@ -43,7 +47,7 @@ class Results(object):
         fpr_rt_lm, tpr_rt_lm, _ = roc_curve(y_test, y_pred)
 
         roc_auc = auc(fpr_rt_lm, tpr_rt_lm)
-        print("ROC AUC %0.2f" % roc_auc)
+        #print("ROC AUC %0.2f" % roc_auc)
 
         plt.figure()
 
@@ -109,9 +113,18 @@ class Results(object):
         plt.savefig("Results/"+target_column + "_FEATURES_" + time.strftime("%d_%m_%Y_%H%M"), bbox_inches='tight')
         #plt.show()
 
+    @classmethod
+    def plot_decision_tree(cls, final_classifier,features, target_column, depth):
+        dotfile = open("Results/" +target_column + "_tree.dot", 'w')
+        tree.export_graphviz(final_classifier, out_file=dotfile, max_depth=depth, feature_names=features)
+        dotfile.close()
+        #check_call(['dot', '-Tpng', r'C:\Users\ngilbert\PycharmProjects\StudentSuccess\tree.dot', '-o',
+        #            r'C:\Users\ngilbert\PycharmProjects\StudentSuccess\tree.png'])
+        #check_call(['dot', '-Tpng', r'tree.dot', '-o', r'tree.png'])
+        #system("dot -Tpng D:.dot -o D:/dtree2.png")
 
     def write_result(self, filename):
         if filename is None:
             filename = cfg['db']['results']
-        self.score_list.to_pickle("Results/"+filename)
+        #self.score_list.to_pickle("Results/"+filename)
         self.score_list.to_csv("Results/"+filename + ".csv")

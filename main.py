@@ -6,6 +6,7 @@ import numpy as np
 from sklearn.ensemble import RandomForestClassifier
 from sklearn.metrics import f1_score
 from sklearn.metrics import make_scorer
+from sklearn.metrics import matthews_corrcoef
 from sklearn.model_selection import RandomizedSearchCV
 from sklearn.tree import DecisionTreeClassifier
 
@@ -21,10 +22,6 @@ logger = logging.getLogger(__name__)
 
 
 
-def score_model(global_best_model):
-    pass
-
-
 def run_predictions(full_frame, global_best_model, X_test, y_test, target_column):
     X_test_subset = X_test[X_test.columns[global_best_model.feature_set]]
     y_test_target = y_test[target_column]
@@ -37,7 +34,7 @@ def run_predictions(full_frame, global_best_model, X_test, y_test, target_column
 
 
 def run_experiment(full_frame, preprocessor, classifier_name, target_column, genetic_iterations, population_size):
-    custom_scorer = make_scorer(f1_score)
+    custom_scorer = make_scorer(matthews_corrcoef)
     config.logger.info("\n\n\n\n%s Starting experiment using %s classifier*********************************", target_column, preprocessor.__class__)
     X_train, X_test, y_train, y_test = preprocessor.split_test_train(test_pct=0.15)
 
@@ -64,7 +61,7 @@ def run_experiment(full_frame, preprocessor, classifier_name, target_column, gen
             child_id = str(iteration)+"-"+str(child_number)
             #logger.debug("Child: %s", child_id)
 
-            classifier = classifier_name()
+            classifier = classifier_name(n_estimators=25)
 
             # Apply population mask to feature set
             X_train_feature_subset = X_train[X_train.columns[feature_mask]]
@@ -74,8 +71,7 @@ def run_experiment(full_frame, preprocessor, classifier_name, target_column, gen
 
             # Tune hyperparameters
             sqrtfeat = int(np.sqrt(X_train_feature_subset.shape[1]))
-            param_grid = {"n_estimators": [10, 25, 50],
-                          "criterion": ["gini", "entropy"],
+            param_grid = {"criterion": ["gini", "entropy"],
                           "max_features": [sqrtfeat - 1, sqrtfeat, sqrtfeat + 1],
                           "max_depth": [3, 6, 9],
                           "min_samples_split": [2, 5, 10]}
@@ -141,13 +137,13 @@ def run_experiment(full_frame, preprocessor, classifier_name, target_column, gen
         # analyze best model for experiment
         generation_best_model = model.global_best[0]
         y_predict_experiment_best = generation_best_model.trained_classifier.predict(X_test[X_test.columns[generation_best_model.feature_set]])
-
-
-        logger.info("Generation #%d Best score: %.4f Child: %s  Parameters: %s",
-                    iteration, generation_best_model.score, generation_best_model.child_id,generation_best_model.trained_classifier.get_params() )
-
         for score in Analysis.classification_scores(y_test, y_predict_experiment_best, target_column):
-            result_frame.add_result(score[0],score[1],iteration,target_column)
+            #logger.debug("%s, %s", score[0], score[1])
+            result_frame.add_result(score[0], score[1], iteration, target_column)
+
+        #logger.debug("Generation #%d Highest  training score: %.4f Child: %s  Parameters: %s", iteration, generation_best_model.score, generation_best_model.child_id,generation_best_model.trained_classifier.get_params() )
+
+
         #logger.info("Cross validated score: %s",classifier.cross_val_score(X_train_feature_subset, y_train[target_column]))
 
 
@@ -165,21 +161,26 @@ def run_experiment(full_frame, preprocessor, classifier_name, target_column, gen
     print("\n\n\n\n\nAnalysis of final results\nGlobal best *************************************************************************************")
     global_best_model = model.global_best[0]
 
-    score_model(global_best_model)
-
     y_predict_global = global_best_model.trained_classifier.predict(X_test[X_test.columns[global_best_model.feature_set]])
 
-    print("Sanity check score %f" % global_best_model.trained_classifier.score(X_test[X_test.columns[global_best_model.feature_set]], y_test[target_column]))
+    #print("Sanity check score %f" % global_best_model.trained_classifier.score(X_test[X_test.columns[global_best_model.feature_set]], y_test[target_column]))
 
-    logger.info("Top features (%d): %s", global_best_model.feature_set.sum(),
-                Analysis.important_features(global_best_model.trained_classifier,global_best_model.feature_set[global_best_model.feature_set].index, target_column, threshold=0.05))
+    logger.debug("%s Scores******************************", target_column)
+    for score in Analysis.classification_scores(y_test, y_predict_global, target_column):
+        logger.debug("%s, %s", score[0], score[1])
+        #result_frame.add_result(score[0], score[1], iteration, target_column)
 
+    importance_threshold = 0.05
+    important_features = [t[1] for t in Analysis.important_features(global_best_model.trained_classifier,global_best_model.feature_set[global_best_model.feature_set].index, target_column, threshold=importance_threshold) if float(t[0]) > importance_threshold]
+    logger.debug("Top features (%d): %s", global_best_model.feature_set.sum(),important_features)
+    logger.debug("Top hyperparameters: %s, %s", global_best_model.trained_classifier.get_params(), global_best_model.classifier_params)
     #if type(classifier) != LinearSVCClassifier:
     result_frame.plot_roc(global_best_model.trained_classifier, X_test[X_test.columns[global_best_model.feature_set]], y_test[target_column])
-    logger.info("%s",Analysis.classification_scores(y_test, y_predict_global, target_column))
+    logger.debug("%s",Analysis.classification_scores(y_test, y_predict_global, target_column))
     #global_best_model.trained_classifier.important_features(global_best_model.feature_set[global_best_model.feature_set].index, target_column)
-    for feature_column,_ in global_best_model.feature_set[global_best_model.feature_set].iteritems():
-        Analysis.agg_by_target(preprocessor.X[feature_column], preprocessor.y[target_column],aggregation_method = 'AVG')
+
+    #for feature_column,_ in global_best_model.feature_set[global_best_model.feature_set].iteritems():
+    #    Analysis.agg_by_target(preprocessor.X[feature_column], preprocessor.y[target_column],aggregation_method = 'AVG')
 
     Analysis.crosstab(y_test[target_column], y_predict_global)
 
@@ -189,10 +190,14 @@ def run_experiment(full_frame, preprocessor, classifier_name, target_column, gen
 
     #run_predictions(full_frame, global_best_model, X_test, y_test, target_column)
 
+    tree_depth=5
     final_classifier = DecisionTreeClassifier()
-    final_classifier.fit(X_train[X_train.columns[global_best_model.feature_set]], y_train[target_column])
-    print("Final score: %f" % final_classifier.score(X_test[X_test.columns[global_best_model.feature_set]], y_test[target_column]))
-
+    final_classifier.set_params(**global_best_model.classifier_params)
+    final_classifier.max_depth = tree_depth
+    final_classifier.max_features = len(important_features)
+    final_classifier.fit(X_train[important_features], y_train[target_column])
+    logger.debug("Single decision tree score: %f" , final_classifier.score(X_test[important_features], y_test[target_column]))
+    Results.plot_decision_tree(final_classifier, important_features, target_column, tree_depth)
     return result_frame
 
 
@@ -206,7 +211,7 @@ def main():
     # targets for FTF
     # targets = ["GRADUATED", "WITHIN_2_YEARS", "WITHIN_3_YEARS", "WITHIN_4_YEARS"]
     targets = ["GRADUATED", "WITHIN_4_YEARS", "WITHIN_5_YEARS", "WITHIN_6_YEARS"]
-    targets = ["GRADUATED", "WITHIN_4_YEARS", "WITHIN_5_YEARS", "WITHIN_6_YEARS", "RETAIN_1_YEAR", "RETAIN_2_YEAR", "RETAIN_3_YEAR"]
+    targets = ["GRADUATED",  "WITHIN_5_YEARS", "WITHIN_6_YEARS", "RETAIN_1_YEAR", "RETAIN_2_YEAR", "RETAIN_3_YEAR","WITHIN_4_YEARS"]
     #targets = ["GRADUATED", "WITHIN_2_YEARS", "WITHIN_3_YEARS", "WITHIN_4_YEARS"]
 
     # targets for transfers
@@ -220,10 +225,11 @@ def main():
     preprocessor.numeric_label_encoder()
     preprocessor.split_features_targets(target_cols = None)
 
-
     # perform one-hot on categorical features, fill NAs, drop columns we don't want to include right now
     # operations all reliant on config.yaml
+    Analysis.nulls_by_feature(preprocessor.X)
     preprocessor.prepare_features()
+    Analysis.nulls_by_feature(preprocessor.X)
 
     #preprocessor.remove_nonvariant_features()
     #full_frame = preprocessor.drop_rows_with_NA()
@@ -240,14 +246,15 @@ def main():
     classifiers = [RandomForestClassifier]
 
     #Analysis.basic_stats(train_features)
-    genetic_iterations = 4
-    population_size = 4
+    genetic_iterations = 10
+    population_size = 10
     for classifier in classifiers:
         for target_column in targets:
             print(Analysis.column_correlation(preprocessor.X, preprocessor.y[target_column]))
             result_frame = run_experiment(full_frame, preprocessor, classifier, target_column, genetic_iterations, population_size)
-            result_frame.plot_scores(['Accuracy', 'F1 Score', 'Precision', 'Recall', 'ROC'])
-            result_frame.write_result("results_" + time.strftime("%d_%m_%Y_%H%M"))
+            result_frame.plot_scores(['Accuracy', 'F1 Score', 'Precision', 'Recall', 'ROC','Matthews Coefficient'])
+#            result_frame.write_result(target_column + "_results_" + time.strftime("%d_%m_%Y_%H%M"))
+            result_frame.write_result(target_column + "_results")
             print(result_frame.score_list)
 
 

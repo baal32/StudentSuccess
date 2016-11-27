@@ -14,7 +14,6 @@ import numpy as np
 import pandas as pd
 
 
-
 import config
 
 class Analysis(object):
@@ -68,6 +67,9 @@ class Analysis(object):
                 pass
         return df2.sort_values(by=['Correlation'],ascending=False)
 
+    @staticmethod
+    def nulls_by_feature(features):
+        print(features.isnull().sum().sort_values(ascending=False))
 
     @staticmethod
     def agg_by_target(feature_column, target_column,aggregation_method = 'AVG'):
@@ -143,3 +145,4 @@ class Analysis(object):
     @staticmethod
     def crosstab(y_actual, y_predict):
         print(pd.crosstab(y_actual, y_predict, rownames=['actual'], colnames=['preds']))
+
