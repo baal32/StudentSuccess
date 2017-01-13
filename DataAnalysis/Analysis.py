@@ -142,7 +142,7 @@ class Analysis(object):
 #            for c, feature, target in zip(contributions[i], instances.columns, instances.iloc[i]):
 #                print(sorted(feature, c, target)
 
-    @staticmethod
-    def crosstab(y_actual, y_predict):
-        print(pd.crosstab(y_actual, y_predict, rownames=['actual'], colnames=['preds']))
+    @classmethod
+    def crosstab(cls,y_actual, y_predict):
+        return (pd.crosstab(y_actual, y_predict, rownames=['actual'], colnames=['preds']))
 

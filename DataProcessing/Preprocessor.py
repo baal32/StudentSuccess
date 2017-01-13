@@ -74,7 +74,7 @@ class Processor(object):
         return X,y
 
     def split_test_train(self, test_pct = .25):
-        msk = np.random.randn(len(self.df)) > test_pct
+        msk = np.random.random(len(self.df)) > test_pct
         X_train, y_train = self.X[msk], self.y[msk]
         X_test, y_test = self.X[~msk], self.y[~msk]
         return X_train, X_test, y_train, y_test

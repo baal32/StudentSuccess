@@ -22,20 +22,23 @@ class Results(object):
         self.name = name
         self.score_list = pd.DataFrame()
 
-    def add_result(self, score_type, score, experiment_number, target_column):
-        self.score_list = self.score_list.append({'score_type': score_type, 'score': score, 'experiment': experiment_number}, ignore_index=True)
+    def add_result(self, score_type, score, experiment_number, target_column, data_type):
+        self.score_list = self.score_list.append({'score_type': score_type, 'score': score, 'experiment': experiment_number, 'data_type':data_type}, ignore_index=True)
         self.target_column = target_column
 
     def plot_scores(self, score_type = ['Accuracy']):
         for score in score_type:
             score_df = self.score_list[self.score_list['score_type'] == score]
-            x_vals = score_df['experiment']
-            y_vals = score_df['score']
+            x_vals = score_df['experiment'].unique()
+            y_train = score_df[score_df['data_type'] == 'train']['score']
+            y_test = score_df[score_df['data_type'] == 'test']['score']
             plt.figure()
             plt.title(score + " by Generation")
             plt.ylabel(score)
             plt.xlabel("Generation")
-            plt.plot(x_vals, y_vals)
+            plt.plot(x_vals, y_train)
+            plt.plot(x_vals, y_test)
+            plt.legend(['Train Data Scores','Test Data Scores'], loc='upper left')
             plt.savefig("Results/"+self.target_column + "_" + score + time.strftime("%d_%m_%Y_%H%M"), bbox_inches='tight')
             #plt.show()
 

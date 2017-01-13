@@ -93,9 +93,17 @@ def run_experiment(full_frame, preprocessor, classifier_name, target_column, gen
             random_search_best_score = parameter_random_search.best_score_
             random_search_best_params = parameter_random_search.best_params_
             random_search_best_estimator = parameter_random_search.best_estimator_
-            model.add_results(random_search_best_score, feature_mask, random_search_best_estimator, random_search_best_params, child_id)
+            #model.add_results(random_search_best_score, feature_mask, random_search_best_estimator,
+            #                  random_search_best_params, child_id)
+            '''Using the custom scorer instead of best_score_ as best_score_ is the cross-validated best score of the best estimator, however when we calculate all the metrics we predict against the entire data set (either train or test) as opposed to hold out data) thus generating a mismatch'''
+            model.add_results(custom_scorer(random_search_best_estimator, X_train_feature_subset, y_train[target_column]), feature_mask, random_search_best_estimator,
+                              random_search_best_params, child_id)
 
-            #logger.debug("%s Random parameter score: %f, Parameters: %s, \nFeatures: %s",child_id,parameter_random_search.best_score_, parameter_random_search.best_params_, X_train_feature_subset.columns)
+
+            logger.debug("(%s %s) %s Random parameter best_score_ MCC score: %f, Parameters: %s",type(random_search_best_estimator),id(random_search_best_estimator), child_id,parameter_random_search.best_score_, parameter_random_search.best_params_)
+#            logger.debug("MCC  %s", matthews_corrcoef(y_train[target_column], random_search_best_estimator.predict(X_train_feature_subset)))
+#            logger.debug("MCC  %s", matthews_corrcoef(y_train[target_column], parameter_random_search.predict(X_train_feature_subset)))
+            #logger.debug("Features: %s",X_train_feature_subset.columns)
             #print(rsearch.best_estimator_)
             # end randomizzed grid search
 
@@ -136,10 +144,16 @@ def run_experiment(full_frame, preprocessor, classifier_name, target_column, gen
 
         # analyze best model for experiment
         generation_best_model = model.global_best[0]
-        y_predict_experiment_best = generation_best_model.trained_classifier.predict(X_test[X_test.columns[generation_best_model.feature_set]])
-        for score in Analysis.classification_scores(y_test, y_predict_experiment_best, target_column):
-            #logger.debug("%s, %s", score[0], score[1])
-            result_frame.add_result(score[0], score[1], iteration, target_column)
+        logger.debug("(%s %s) Generation best MCC score: %s",type(generation_best_model.trained_classifier), id(generation_best_model.trained_classifier), model.global_best[0].score )
+        y_train_predict = generation_best_model.trained_classifier.predict(X_train[X_train.columns[generation_best_model.feature_set]])
+        y_test_predict = generation_best_model.trained_classifier.predict(X_test[X_test.columns[generation_best_model.feature_set]])
+        for score in Analysis.classification_scores(y_test, y_test_predict, target_column):
+            logger.debug("Test: %s, %s", score[0], score[1])
+            result_frame.add_result(score[0], score[1], iteration, target_column, 'test')
+
+        for score in Analysis.classification_scores(y_train, y_train_predict, target_column):
+            logger.debug("Train: %s, %s", score[0], score[1])
+            result_frame.add_result(score[0], score[1], iteration, target_column, 'train')
 
         #logger.debug("Generation #%d Highest  training score: %.4f Child: %s  Parameters: %s", iteration, generation_best_model.score, generation_best_model.child_id,generation_best_model.trained_classifier.get_params() )
 
@@ -182,7 +196,7 @@ def run_experiment(full_frame, preprocessor, classifier_name, target_column, gen
     #for feature_column,_ in global_best_model.feature_set[global_best_model.feature_set].iteritems():
     #    Analysis.agg_by_target(preprocessor.X[feature_column], preprocessor.y[target_column],aggregation_method = 'AVG')
 
-    Analysis.crosstab(y_test[target_column], y_predict_global)
+    logger.debug(Analysis.crosstab(y_test[target_column], y_predict_global))
 
 
 
@@ -224,11 +238,13 @@ def main():
     preprocessor = Processor(full_frame)
     preprocessor.numeric_label_encoder()
     preprocessor.split_features_targets(target_cols = None)
-
+    print(preprocessor.X.shape)
+    #Analysis.basic_stats(preprocessor.df)
     # perform one-hot on categorical features, fill NAs, drop columns we don't want to include right now
     # operations all reliant on config.yaml
     Analysis.nulls_by_feature(preprocessor.X)
     preprocessor.prepare_features()
+    print(preprocessor.X.shape)
     Analysis.nulls_by_feature(preprocessor.X)
 
     #preprocessor.remove_nonvariant_features()
@@ -246,15 +262,16 @@ def main():
     classifiers = [RandomForestClassifier]
 
     #Analysis.basic_stats(train_features)
-    genetic_iterations = 10
-    population_size = 10
+    genetic_iterations = 20
+    population_size = 20
     for classifier in classifiers:
         for target_column in targets:
             print(Analysis.column_correlation(preprocessor.X, preprocessor.y[target_column]))
             result_frame = run_experiment(full_frame, preprocessor, classifier, target_column, genetic_iterations, population_size)
+            result_frame.write_result(target_column + "_results")
             result_frame.plot_scores(['Accuracy', 'F1 Score', 'Precision', 'Recall', 'ROC','Matthews Coefficient'])
 #            result_frame.write_result(target_column + "_results_" + time.strftime("%d_%m_%Y_%H%M"))
-            result_frame.write_result(target_column + "_results")
+
             print(result_frame.score_list)
 
 

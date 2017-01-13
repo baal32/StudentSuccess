@@ -61,35 +61,39 @@ configuration:
 
         drop_col_list:
         # GPA
-#            - PREV_TERM_GPA
-#            - LAST_TERM_GPA
-#            - MAX_TERM_GPA
-#           - AVG_CSUSM_GPA
-#            - MIN_TERM_GPA
-#            - MAX_CSUSM_GPA
-#            - AVG_TERM_GPA
-#            - MIN_CSUSM_GPA
-#            - CSUSM_GPA_FINAL
-#            - CSUSM_GPA_FIRST_TERM
-#            - MAX_CUM_GPA
-#            - AVG_CUM_GPA
-#            - MIN_CUM_GPA
-#            - CSUSM_GPA_FIRST_YEAR
-            - LAST_DEPT__Undeclared
-            - LAST_PLAN__UNDL
+            - PREV_TERM_GPA
+            - FIRST_TERM_GPA
+            - LAST_TERM_GPA
+            - MAX_TERM_GPA
+            - AVG_CSUSM_GPA
+            - MIN_TERM_GPA
+            - MAX_CSUSM_GPA
+            - AVG_TERM_GPA
+            - MIN_CSUSM_GPA
+            - CSUSM_GPA_FINAL
+            - CSUSM_GPA_FIRST_TERM
+            - MAX_CUM_GPA
+            - AVG_CUM_GPA
+            - MIN_CUM_GPA
+            - CSUSM_GPA_FIRST_YEAR
+            - AVG_DWF_PER_TERM
+            - DWF_GRADES
+
         # UNITS
-#            - AVG_TERM_UNITS_TOTAL
-#            - AVG_TERM_UNITS_PASSED_GPA
-#            - AVG_TERM_UNITS_TAKEN_GPA
-#            - TOT_24_DEGR_UNITS_YEAR1
-#            - TOT_24_UNITS_YEAR1
-#            - TOT_DEGR_UNITS_YEAR1
-#            - TOT_UNITS_YEAR1
-#            - AVG_TERM_GRADE_POINTS
+            - AVG_TERM_UNITS_TOTAL
+            - AVG_TERM_UNITS_PASSED_GPA
+            - AVG_TERM_UNITS_TAKEN_GPA
+            - TOT_24_DEGR_UNITS_YEAR1
+            - TOT_24_UNITS_YEAR1
+            - TOT_DEGR_UNITS_YEAR1
+            - TOT_UNITS_YEAR1
+            - AVG_TERM_GRADE_POINTS
+            - UNITS_LDGE_TOTAL_2Y
         # TERMS
             - ACTIVE_TERMS
             - ENROLLED_TERMS
-
+            - LAST_DEPT__Undeclared
+            - LAST_PLAN__UNDL
             - ACADEMIC_LEVEL
             - DW_ROWRANK
             - HOME_COUNTRY
